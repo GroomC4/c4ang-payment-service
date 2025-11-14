@@ -1,0 +1,393 @@
+package com.groom.payment.presentation.web
+
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.groom.payment.common.TransactionApplier
+import com.groom.payment.common.annotation.IntegrationTest
+import com.groom.payment.common.idempotency.IdempotencyService
+import com.groom.ecommerce.order.infrastructure.repository.OrderRepositoryImpl
+import com.groom.ecommerce.order.infrastructure.stock.StockReservationService
+import com.groom.payment.domain.model.PaymentMethod
+import com.groom.payment.domain.model.PaymentStatus
+import com.groom.payment.infrastructure.repository.PaymentRepositoryImpl
+import com.groom.payment.presentation.web.dto.CancelPaymentRequest
+import com.groom.payment.presentation.web.dto.CompletePaymentRequest
+import com.groom.payment.presentation.web.dto.RequestPaymentRefundRequest
+import com.groom.payment.presentation.web.dto.RequestPaymentRequest
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Test
+import org.redisson.api.RedissonClient
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.http.MediaType
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors
+import org.springframework.test.context.jdbc.Sql
+import org.springframework.test.context.jdbc.SqlGroup
+import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
+import org.springframework.test.web.servlet.result.MockMvcResultHandlers.print
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import java.math.BigDecimal
+import java.time.Duration
+import java.util.UUID
+
+/**
+ * PaymentCommandController 통합 테스트
+ *
+ * 비동기 주문-결제 플로우의 Payment API 엔드투엔드 테스트
+ * - PG 콜백 API (인증 불필요)
+ * - 내부 API
+ * - 멱등성 검증
+ * - 재고 관리 (Redis/DB)
+ * - 도메인 이벤트 발행
+ */
+@IntegrationTest
+@SpringBootTest
+@AutoConfigureMockMvc
+@SqlGroup(
+    Sql(
+        scripts = ["/sql/payment/cleanup-payment-command-test.sql"],
+        executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS,
+    ),
+    Sql(
+        scripts = ["/sql/payment/init-payment-command-test.sql"],
+        executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD,
+    ),
+    Sql(
+        scripts = ["/sql/payment/cleanup-payment-command-test.sql"],
+        executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD,
+    ),
+)
+@DisplayName("Payment 명령(Command) 컨트롤러 통합 테스트")
+class PaymentCommandControllerIntegrationTest {
+    @Autowired
+    private lateinit var mockMvc: MockMvc
+
+    @Autowired
+    private lateinit var objectMapper: ObjectMapper
+
+    @Autowired
+    private lateinit var paymentRepository: PaymentRepositoryImpl
+
+    @Autowired
+    private lateinit var orderRepository: OrderRepositoryImpl
+
+    @Autowired
+    private lateinit var redissonClient: RedissonClient
+
+    @Autowired
+    private lateinit var idempotencyService: IdempotencyService
+
+    @Autowired
+    private lateinit var stockReservationService: StockReservationService
+
+    @Autowired
+    private lateinit var transactionApplier: TransactionApplier
+
+    companion object {
+        // Test Users (SQL 스크립트에서 생성)
+        private val USER_1 = UUID.fromString("cccccccc-cccc-cccc-cccc-000000000001")
+        private val USER_2 = UUID.fromString("cccccccc-cccc-cccc-cccc-000000000002")
+
+        // Test Stores (SQL 스크립트에서 생성)
+        private val STORE_1 = UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-000000000001")
+
+        // Test Products (SQL 스크립트에서 생성)
+        private val PRODUCT_MOUSE = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-000000000001")
+        private val PRODUCT_KEYBOARD = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-000000000002")
+
+        // Test Orders (고정 UUID)
+        private val ORDER_PAYMENT_WAIT = UUID.fromString("dddddddd-dddd-dddd-dddd-111111111111")
+        private val ORDER_PAYMENT_REQUEST = UUID.fromString("dddddddd-dddd-dddd-dddd-222222222222")
+        private val ORDER_PAYMENT_COMPLETED = UUID.fromString("dddddddd-dddd-dddd-dddd-333333333333")
+        private val ORDER_DELIVERED = UUID.fromString("dddddddd-dddd-dddd-dddd-444444444444")
+
+        // Test Payments (고정 UUID)
+        private val PAYMENT_WAIT = UUID.fromString("cccccccc-cccc-cccc-cccc-111111111111")
+        private val PAYMENT_REQUEST = UUID.fromString("cccccccc-cccc-cccc-cccc-222222222222")
+        private val PAYMENT_COMPLETED = UUID.fromString("cccccccc-cccc-cccc-cccc-333333333333")
+        private val PAYMENT_FOR_REFUND = UUID.fromString("cccccccc-cccc-cccc-cccc-444444444444")
+    }
+
+    @BeforeEach
+    fun setUp() {
+        // Redis 재고 초기화
+        redissonClient.getAtomicLong("product:remaining-stock:$PRODUCT_MOUSE").set(100)
+        redissonClient.getAtomicLong("product:remaining-stock:$PRODUCT_KEYBOARD").set(50)
+    }
+
+    @AfterEach
+    fun tearDown() {
+        // SQL 스크립트가 AFTER_TEST_METHOD에서 cleanup하므로 추가 정리 불필요
+    }
+
+    // ========== 테스트 케이스 ==========
+
+    @Test
+    @DisplayName("결제 요청 API - Payment 상태를 PAYMENT_REQUEST로 변경")
+    fun `결제 요청 - 정상 처리`() {
+        // given
+        val request =
+            RequestPaymentRequest(
+                paymentId = PAYMENT_WAIT,
+                paymentMethod = PaymentMethod.CARD,
+                totalAmount = BigDecimal("20000.00"),
+                paymentAmount = BigDecimal("20000.00"),
+                discountAmount = BigDecimal.ZERO,
+                deliveryFee = BigDecimal.ZERO,
+            )
+
+        // when
+        mockMvc
+            .perform(
+                post("/api/v1/payments/request")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+                    .with(SecurityMockMvcRequestPostProcessors.user(USER_1.toString()).roles("CUSTOMER")),
+            )
+            // then
+            .andExpect(status().isCreated)
+            .andExpect(jsonPath("$.paymentId").value(PAYMENT_WAIT.toString()))
+            .andExpect(jsonPath("$.orderId").value(ORDER_PAYMENT_WAIT.toString()))
+            .andExpect(jsonPath("$.status").value("PAYMENT_REQUEST"))
+            .andExpect(jsonPath("$.pgTransactionId").exists())
+            .andExpect(jsonPath("$.pgTransactionId").isString)
+            .andDo(print())
+
+        // DB 상태 검증
+        val payment = transactionApplier.applyPrimaryTransaction { paymentRepository.findById(PAYMENT_WAIT) }.orElseThrow()
+        assertEquals(PaymentStatus.PAYMENT_REQUEST, payment.status)
+        // PG Stub은 랜덤 UUID를 생성하므로 패턴만 검증
+        assert(payment.pgTransactionId?.startsWith("PG-") == true) {
+            "pgTransactionId should start with 'PG-', but was: ${payment.pgTransactionId}"
+        }
+    }
+
+    @Test
+    @DisplayName("결제 완료 콜백 - 재고 예약 확정 및 주문 상태 변경")
+    fun `결제 완료 - 정상 처리`() {
+        // given
+        val idempotencyKey = "IDEM-COMPLETE-001"
+        val request =
+            CompletePaymentRequest(
+                paymentId = PAYMENT_REQUEST,
+                pgApprovalNumber = "PG-APPROVAL-NEW-001",
+                idempotencyKey = idempotencyKey,
+            )
+
+        // 재고 예약 설정 (직접 Redis에 예약 정보 저장)
+        val reservationBucket = redissonClient.getBucket<String>("product:reservation-stock:RES-REQ-002")
+        reservationBucket.set("$PRODUCT_MOUSE:2", Duration.ofMinutes(10))
+
+        // when
+        mockMvc
+            .perform(
+                post("/external/pg/callback/payment/complete")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+                    .with(SecurityMockMvcRequestPostProcessors.user(USER_1.toString()).roles("CUSTOMER")),
+            )
+            // then
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.paymentId").value(PAYMENT_REQUEST.toString()))
+            .andExpect(jsonPath("$.orderId").value(ORDER_PAYMENT_REQUEST.toString()))
+            .andExpect(jsonPath("$.status").value("PAYMENT_COMPLETED"))
+            .andExpect(jsonPath("$.pgApprovalNumber").value("PG-APPROVAL-NEW-001"))
+            .andExpect(jsonPath("$.alreadyProcessed").value(false))
+            .andDo(print())
+
+        // DB 상태 검증
+        val payment = transactionApplier.applyPrimaryTransaction { paymentRepository.findById(PAYMENT_REQUEST) }.orElseThrow()
+        assertEquals(PaymentStatus.PAYMENT_COMPLETED, payment.status)
+        assertEquals("PG-APPROVAL-NEW-001", payment.pgApprovalNumber)
+
+        // 재고 예약 확정 검증 (예약 정보가 Redis에서 제거됨)
+        val reservationAfter = redissonClient.getBucket<String>("product:reservation-stock:RES-REQ-002").get()
+        assertNull(reservationAfter)
+    }
+
+    @Test
+    @DisplayName("결제 완료 콜백 - 멱등성 검증")
+    fun `결제 완료 - 중복 요청 멱등성 처리`() {
+        // given
+        val idempotencyKey = "IDEM-COMPLETE-002"
+        val request =
+            CompletePaymentRequest(
+                paymentId = PAYMENT_COMPLETED,
+                pgApprovalNumber = "PG-APPROVAL-003", // 이미 완료된 결제
+                idempotencyKey = idempotencyKey,
+            )
+
+        // 첫 번째 요청 (이미 완료된 상태)
+        idempotencyService.ensureIdempotency(idempotencyKey, Duration.ofHours(24))
+
+        // when - 두 번째 요청
+        mockMvc
+            .perform(
+                post("/external/pg/callback/payment/complete")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+                    .with(SecurityMockMvcRequestPostProcessors.user(USER_1.toString()).roles("CUSTOMER")),
+            )
+            // then
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.paymentId").value(PAYMENT_COMPLETED.toString()))
+            .andExpect(jsonPath("$.status").value("PAYMENT_COMPLETED"))
+            .andExpect(jsonPath("$.alreadyProcessed").value(true))
+            .andDo(print())
+    }
+
+    @Test
+    @DisplayName("결제 취소 - 재고 복구 및 주문 취소")
+    fun `결제 취소 - 정상 처리`() {
+        // given
+        val request =
+            CancelPaymentRequest(
+                paymentId = PAYMENT_REQUEST,
+                reason = "고객 요청에 의한 취소",
+            )
+
+        // when
+        mockMvc
+            .perform(
+                post("/api/v1/payments/${PAYMENT_REQUEST}/cancel")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+                    .with(SecurityMockMvcRequestPostProcessors.user(USER_1.toString()).roles("CUSTOMER")),
+            )
+            // then
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.paymentId").value(PAYMENT_REQUEST.toString()))
+            .andExpect(jsonPath("$.orderId").value(ORDER_PAYMENT_REQUEST.toString()))
+            .andExpect(jsonPath("$.previousStatus").value("PAYMENT_REQUEST"))
+            .andExpect(jsonPath("$.currentStatus").value("PAYMENT_CANCELLED"))
+            .andExpect(jsonPath("$.reason").value("고객 요청에 의한 취소"))
+            .andDo(print())
+
+        // DB 상태 검증 - Payment
+        val payment = transactionApplier.applyPrimaryTransaction { paymentRepository.findById(PAYMENT_REQUEST) }.orElseThrow()
+        assertEquals(PaymentStatus.PAYMENT_CANCELLED, payment.status)
+
+        // DB 상태 검증 - Order (이벤트 핸들러가 처리)
+        val order = transactionApplier.applyPrimaryTransaction { orderRepository.findById(ORDER_PAYMENT_REQUEST) }.orElseThrow()
+        assertEquals(com.groom.ecommerce.order.domain.model.OrderStatus.ORDER_CANCELLED, order.status)
+
+        // 재고 복구는 StockReservationScheduler가 비동기로 처리하므로 통합 테스트에서 검증하지 않음
+    }
+
+    @Test
+    @DisplayName("환불 요청 - DELIVERED 주문의 환불 처리")
+    fun `환불 요청 - 정상 처리`() {
+        // given
+        val refundAmount = BigDecimal("100000")
+        val request =
+            RequestPaymentRefundRequest(
+                paymentId = PAYMENT_FOR_REFUND,
+                refundAmount = refundAmount,
+                reason = "단순 변심",
+            )
+
+        // when
+        mockMvc
+            .perform(
+                post("/api/v1/payments/${PAYMENT_FOR_REFUND}/refund/request")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+                    .with(SecurityMockMvcRequestPostProcessors.user(USER_1.toString()).roles("CUSTOMER")),
+            )
+            // then
+            .andExpect(status().isAccepted) // 202 Accepted
+            .andExpect(jsonPath("$.paymentId").value(PAYMENT_FOR_REFUND.toString()))
+            .andExpect(jsonPath("$.orderId").value(ORDER_DELIVERED.toString()))
+            .andExpect(jsonPath("$.status").value("REFUND_REQUESTED"))
+            .andExpect(jsonPath("$.refundAmount").value(100000))
+            .andExpect(jsonPath("$.reason").value("단순 변심"))
+            .andDo(print())
+
+        // DB 상태 검증
+        val payment = transactionApplier.applyPrimaryTransaction { paymentRepository.findById(PAYMENT_FOR_REFUND) }.orElseThrow()
+        assertEquals(PaymentStatus.REFUND_REQUESTED, payment.status)
+    }
+
+    @Test
+    @DisplayName("환불 완료 콜백 - 멱등성 검증")
+    fun `환불 완료 - 정상 처리`() {
+        // given
+        val idempotencyKey = "IDEM-REFUND-001"
+
+        // 먼저 환불 요청 상태로 변경
+        transactionApplier.applyPrimaryTransaction {
+            val payment = paymentRepository.findById(PAYMENT_FOR_REFUND).orElseThrow()
+            payment.requestRefund("단순 변심", BigDecimal("100000"))
+            paymentRepository.save(payment)
+        }
+
+        val request =
+            CompletePaymentRequest(
+                paymentId = PAYMENT_FOR_REFUND,
+                pgApprovalNumber = "PG-REFUND-TX-001", // 환불 거래 ID
+                idempotencyKey = idempotencyKey,
+            )
+
+        // when
+        mockMvc
+            .perform(
+                post("/external/pg/callback/payment/refund")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+                    .with(SecurityMockMvcRequestPostProcessors.user(USER_1.toString()).roles("CUSTOMER")),
+            )
+            // then
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.paymentId").value(PAYMENT_FOR_REFUND.toString()))
+            .andExpect(jsonPath("$.orderId").value(ORDER_DELIVERED.toString()))
+            .andExpect(jsonPath("$.status").value("REFUND_COMPLETED"))
+            .andExpect(jsonPath("$.pgApprovalNumber").value("PG-REFUND-TX-001"))
+            .andExpect(jsonPath("$.alreadyProcessed").value(false))
+            .andDo(print())
+
+        // DB 상태 검증
+        val payment = transactionApplier.applyPrimaryTransaction { paymentRepository.findById(PAYMENT_FOR_REFUND) }.orElseThrow()
+        assertEquals(PaymentStatus.REFUND_COMPLETED, payment.status)
+    }
+
+    @Test
+    @DisplayName("결제 실패 콜백 - 재고 복구 및 주문 실패 처리")
+    fun `결제 실패 - 정상 처리`() {
+        // given
+        val request =
+            CancelPaymentRequest(
+                paymentId = PAYMENT_REQUEST,
+                reason = "카드 한도 초과",
+            )
+
+        // 재고 예약 설정 (직접 Redis에 예약 정보 저장)
+        val reservationBucket = redissonClient.getBucket<String>("product:reservation-stock:RES-REQ-002")
+        reservationBucket.set("$PRODUCT_MOUSE:2", Duration.ofMinutes(10))
+
+        // when
+        mockMvc
+            .perform(
+                post("/external/pg/callback/payment/fail")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+                    .with(SecurityMockMvcRequestPostProcessors.user(USER_1.toString()).roles("CUSTOMER")),
+            )
+            // then
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.paymentId").value(PAYMENT_REQUEST.toString()))
+            .andExpect(jsonPath("$.orderId").value(ORDER_PAYMENT_REQUEST.toString()))
+            .andExpect(jsonPath("$.currentStatus").value("PAYMENT_FAILED"))
+            .andExpect(jsonPath("$.reason").value("카드 한도 초과"))
+            .andDo(print())
+
+        // DB 상태 검증
+        val payment = transactionApplier.applyPrimaryTransaction { paymentRepository.findById(PAYMENT_REQUEST) }.orElseThrow()
+        assertEquals(PaymentStatus.PAYMENT_FAILED, payment.status)
+    }
+}

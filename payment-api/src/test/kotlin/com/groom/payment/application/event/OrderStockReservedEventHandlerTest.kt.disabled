@@ -1,0 +1,204 @@
+package com.groom.payment.application.event
+
+import com.groom.payment.common.annotation.UnitTest
+import com.groom.ecommerce.order.domain.event.ReservedProduct
+import com.groom.ecommerce.order.domain.event.StockReservedEvent
+import com.groom.payment.application.dto.OrderInfo
+import com.groom.payment.application.dto.OrderItemInfo
+import com.groom.payment.domain.model.Payment
+import com.groom.payment.domain.model.PaymentGatewayLog
+import com.groom.payment.domain.model.PaymentStatus
+import com.groom.payment.domain.port.OrderPort
+import com.groom.payment.domain.port.SavePaymentGatewayLogPort
+import com.groom.payment.domain.port.SavePaymentPort
+import io.kotest.core.spec.IsolationMode
+import io.kotest.core.spec.style.BehaviorSpec
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
+import io.mockk.every
+import io.mockk.just
+import io.mockk.mockk
+import io.mockk.runs
+import io.mockk.slot
+import io.mockk.verify
+import java.math.BigDecimal
+import java.time.LocalDateTime
+import java.util.UUID
+
+@UnitTest
+class OrderStockReservedEventHandlerTest :
+    BehaviorSpec({
+        isolationMode = IsolationMode.InstancePerLeaf
+
+        Given("재고 예약이 완료된 StockReservedEvent 발생 (정상 케이스)") {
+            val orderPort = mockk<OrderPort>()
+            val savePaymentPort = mockk<SavePaymentPort>()
+            val saveGatewayLogPort = mockk<SavePaymentGatewayLogPort>()
+
+            val handler =
+                OrderStockReservedEventHandler(
+                    orderPort,
+                    savePaymentPort,
+                    saveGatewayLogPort,
+                )
+
+            val orderId = UUID.randomUUID()
+            val storeId = UUID.randomUUID()
+            val productId = UUID.randomUUID()
+            val reservationId = "RES-001"
+
+            val orderInfo =
+                OrderInfo(
+                    orderId = orderId,
+                    orderNumber = "ORDER-001",
+                    items =
+                        listOf(
+                            OrderItemInfo(
+                                productId = productId,
+                                productName = "테스트 상품",
+                                quantity = 2,
+                                price = BigDecimal("10000.00"),
+                            ),
+                        ),
+                )
+
+            val event =
+                StockReservedEvent(
+                    orderId = orderId,
+                    orderNumber = "ORDER-001",
+                    reservationId = reservationId,
+                    storeId = storeId,
+                    products = listOf(ReservedProduct(productId, 2)),
+                    expiresAt = LocalDateTime.now().plusMinutes(10),
+                    occurredAt = LocalDateTime.now(),
+                )
+
+            // Mock 설정
+            every { orderPort.hasPayment(orderId) } returns false
+            every { orderPort.findById(orderId) } returns orderInfo
+            every { orderPort.markOrderPaymentPending(orderId, any()) } just runs
+
+            val paymentSlot = slot<Payment>()
+            every { savePaymentPort.save(capture(paymentSlot)) } answers { firstArg() }
+
+            val gatewayLogSlot = slot<PaymentGatewayLog>()
+            every { saveGatewayLogPort.save(capture(gatewayLogSlot)) } answers { firstArg() }
+
+            When("handleStockReserved 호출") {
+                handler.handleStockReserved(event)
+
+                Then("Payment 중복 검사가 수행되어야 한다") {
+                    verify(exactly = 1) { orderPort.hasPayment(orderId) }
+                }
+
+                Then("Payment 엔티티가 PAYMENT_WAIT 상태로 생성되어야 한다") {
+                    val savedPayment = paymentSlot.captured
+                    savedPayment.orderId shouldBe orderId
+                    savedPayment.status shouldBe PaymentStatus.PAYMENT_WAIT
+                    savedPayment.totalAmount shouldBe null // 금액 정보는 결제 요청 시 설정
+                    savedPayment.paymentAmount shouldBe null
+                    savedPayment.method shouldBe null
+                }
+
+                Then("Order 상태가 PAYMENT_PENDING으로 변경되어야 한다") {
+                    verify(exactly = 1) { orderPort.markOrderPaymentPending(orderId, paymentSlot.captured.id) }
+                }
+
+                Then("PaymentGatewayLog에 초기 이력이 기록되어야 한다") {
+                    val savedLog = gatewayLogSlot.captured
+                    savedLog.pgCode shouldBe "SYSTEM"
+                    savedLog.status shouldBe "PAYMENT_WAIT"
+                    savedLog.payment shouldBe paymentSlot.captured
+                    savedLog.externalPaymentData shouldNotBe null
+                }
+            }
+        }
+
+        Given("이미 Payment가 존재하는 Order인 경우") {
+            val orderPort = mockk<OrderPort>()
+            val savePaymentPort = mockk<SavePaymentPort>()
+            val saveGatewayLogPort = mockk<SavePaymentGatewayLogPort>()
+
+            val handler =
+                OrderStockReservedEventHandler(
+                    orderPort,
+                    savePaymentPort,
+                    saveGatewayLogPort,
+                )
+
+            val orderId = UUID.randomUUID()
+
+            val event =
+                StockReservedEvent(
+                    orderId = orderId,
+                    orderNumber = "ORDER-002",
+                    reservationId = "RES-002",
+                    storeId = UUID.randomUUID(),
+                    products = listOf(ReservedProduct(UUID.randomUUID(), 1)),
+                    expiresAt = LocalDateTime.now().plusMinutes(10),
+                    occurredAt = LocalDateTime.now(),
+                )
+
+            // 이미 Payment가 존재
+            every { orderPort.hasPayment(orderId) } returns true
+
+            When("handleStockReserved 호출") {
+                Then("IllegalStateException이 발생해야 한다") {
+                    try {
+                        handler.handleStockReserved(event)
+                        throw AssertionError("Expected IllegalStateException")
+                    } catch (e: IllegalStateException) {
+                        e.message shouldBe "Payment already exists for order: $orderId"
+                    }
+
+                    verify(exactly = 1) { orderPort.hasPayment(orderId) }
+                    verify(exactly = 0) { orderPort.findById(any()) }
+                    verify(exactly = 0) { savePaymentPort.save(any()) }
+                }
+            }
+        }
+
+        Given("Order가 존재하지 않는 경우") {
+            val orderPort = mockk<OrderPort>()
+            val savePaymentPort = mockk<SavePaymentPort>()
+            val saveGatewayLogPort = mockk<SavePaymentGatewayLogPort>()
+
+            val handler =
+                OrderStockReservedEventHandler(
+                    orderPort,
+                    savePaymentPort,
+                    saveGatewayLogPort,
+                )
+
+            val nonExistentOrderId = UUID.randomUUID()
+
+            val event =
+                StockReservedEvent(
+                    orderId = nonExistentOrderId,
+                    orderNumber = "ORDER-003",
+                    reservationId = "RES-003",
+                    storeId = UUID.randomUUID(),
+                    products = listOf(ReservedProduct(UUID.randomUUID(), 1)),
+                    expiresAt = LocalDateTime.now().plusMinutes(10),
+                    occurredAt = LocalDateTime.now(),
+                )
+
+            every { orderPort.hasPayment(nonExistentOrderId) } returns false
+            every { orderPort.findById(nonExistentOrderId) } returns null
+
+            When("handleStockReserved 호출") {
+                Then("IllegalStateException이 발생해야 한다") {
+                    try {
+                        handler.handleStockReserved(event)
+                        throw AssertionError("Expected IllegalStateException")
+                    } catch (e: IllegalStateException) {
+                        e.message shouldBe "Order not found: $nonExistentOrderId"
+                    }
+
+                    verify(exactly = 1) { orderPort.hasPayment(nonExistentOrderId) }
+                    verify(exactly = 1) { orderPort.findById(nonExistentOrderId) }
+                    verify(exactly = 0) { savePaymentPort.save(any()) }
+                }
+            }
+        }
+    })
