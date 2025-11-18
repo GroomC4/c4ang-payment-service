@@ -41,6 +41,7 @@ import java.util.UUID
 @Table(name = "p_payment")
 class Payment(
     orderId: UUID,
+    userId: UUID,
     totalAmount: BigDecimal? = null,
     paymentAmount: BigDecimal? = null,
     discountAmount: BigDecimal? = null,
@@ -60,6 +61,10 @@ class Payment(
 
     @Column(nullable = false)
     var orderId: UUID = orderId
+        private set
+
+    @Column(nullable = false)
+    var userId: UUID = userId
         private set
 
     @Column(precision = 12, scale = 2)
@@ -292,5 +297,5 @@ class Payment(
 
     override fun hashCode(): Int = id?.hashCode() ?: System.identityHashCode(this)
 
-    override fun toString(): String = "Payment(id=$id, orderId=$orderId, totalAmount=$totalAmount, status=$status)"
+    override fun toString(): String = "Payment(id=$id, orderId=$orderId, userId=$userId, totalAmount=$totalAmount, status=$status)"
 }

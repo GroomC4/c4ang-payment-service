@@ -40,13 +40,13 @@ class PaymentPersistenceAdapter(
     override fun loadByOrderUserId(
         userId: UUID,
         pageable: Pageable,
-    ): Page<Payment> = paymentJpaRepository.findByOrderUserId(userId, pageable)
+    ): Page<Payment> = paymentJpaRepository.findByUserId(userId, pageable)
 
     override fun loadByOrderUserIdAndStatus(
         userId: UUID,
         status: PaymentStatus,
         pageable: Pageable,
-    ): Page<Payment> = paymentJpaRepository.findByOrderUserIdAndStatus(userId, status, pageable)
+    ): Page<Payment> = paymentJpaRepository.findByUserIdAndStatus(userId, status, pageable)
 
     override fun save(payment: Payment): Payment = paymentJpaRepository.save(payment)
 }

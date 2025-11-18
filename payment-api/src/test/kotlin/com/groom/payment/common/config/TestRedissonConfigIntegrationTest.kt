@@ -2,7 +2,7 @@ package com.groom.payment.common.config
 
 import com.groom.payment.common.annotation.IntegrationTest
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Disabled
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.redisson.api.RedissonClient
 import org.springframework.beans.factory.annotation.Autowired
@@ -16,7 +16,7 @@ import java.util.UUID
  * Docker Compose 환경의 Redis를 사용하여
  * Redisson이 정상적으로 연결되고 작동하는지 검증합니다.
  */
-@Disabled("구현확인을 위한 일회성 테스트지만 이후 필요할수도 있어 비활성화만 해둠")
+@Tag("integration-test")
 @IntegrationTest
 @SpringBootTest
 class TestRedissonConfigIntegrationTest {

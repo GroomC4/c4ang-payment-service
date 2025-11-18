@@ -34,36 +34,18 @@ interface PaymentJpaRepository : JpaRepository<Payment, UUID> {
 
     /**
      * 사용자별 결제 목록 조회 (페이지네이션)
-     *
-     * Order와 조인하여 userId로 필터링합니다.
      */
-    @Query(
-        """
-        SELECT p FROM Payment p
-        JOIN Order o ON p.orderId = o.id
-        WHERE o.userExternalId = :userId
-        ORDER BY p.createdAt DESC
-    """,
-    )
-    fun findByOrderUserId(
-        @Param("userId") userId: UUID,
+    fun findByUserId(
+        userId: UUID,
         pageable: Pageable,
     ): Page<Payment>
 
     /**
      * 사용자별 + 상태별 결제 목록 조회 (페이지네이션)
      */
-    @Query(
-        """
-        SELECT p FROM Payment p
-        JOIN Order o ON p.orderId = o.id
-        WHERE o.userExternalId = :userId AND p.status = :status
-        ORDER BY p.createdAt DESC
-    """,
-    )
-    fun findByOrderUserIdAndStatus(
-        @Param("userId") userId: UUID,
-        @Param("status") status: PaymentStatus,
+    fun findByUserIdAndStatus(
+        userId: UUID,
+        status: PaymentStatus,
         pageable: Pageable,
     ): Page<Payment>
 }

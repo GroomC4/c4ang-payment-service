@@ -20,6 +20,7 @@ object PaymentTestFixture {
     fun createPayment(
         id: UUID = UUID.randomUUID(),
         orderId: UUID = UUID.randomUUID(),
+        userId: UUID = UUID.randomUUID(),
         totalAmount: BigDecimal = BigDecimal("50000"),
         paymentAmount: BigDecimal = BigDecimal("50000"),
         discountAmount: BigDecimal = BigDecimal.ZERO,
@@ -40,6 +41,7 @@ object PaymentTestFixture {
         val payment =
             Payment(
                 orderId = orderId,
+                userId = userId,
                 totalAmount = totalAmount,
                 paymentAmount = paymentAmount,
                 discountAmount = discountAmount,
@@ -70,10 +72,12 @@ object PaymentTestFixture {
      */
     fun createPaymentWait(
         orderId: UUID = UUID.randomUUID(),
+        userId: UUID = UUID.randomUUID(),
         paymentAmount: BigDecimal = BigDecimal("50000"),
     ): Payment =
         createPayment(
             orderId = orderId,
+            userId = userId,
             totalAmount = paymentAmount,
             paymentAmount = paymentAmount,
             status = PaymentStatus.PAYMENT_WAIT,
@@ -85,11 +89,13 @@ object PaymentTestFixture {
      */
     fun createPaymentRequest(
         orderId: UUID = UUID.randomUUID(),
+        userId: UUID = UUID.randomUUID(),
         paymentAmount: BigDecimal = BigDecimal("50000"),
         pgTransactionId: String = "PG-TX-${UUID.randomUUID().toString().take(8)}",
     ): Payment =
         createPayment(
             orderId = orderId,
+            userId = userId,
             totalAmount = paymentAmount,
             paymentAmount = paymentAmount,
             status = PaymentStatus.PAYMENT_REQUEST,
@@ -102,12 +108,14 @@ object PaymentTestFixture {
      */
     fun createPaymentCompleted(
         orderId: UUID = UUID.randomUUID(),
+        userId: UUID = UUID.randomUUID(),
         paymentAmount: BigDecimal = BigDecimal("50000"),
         pgTransactionId: String = "PG-TX-${UUID.randomUUID().toString().take(8)}",
         pgApprovalNumber: String = "PG-APPROVAL-${UUID.randomUUID().toString().take(8)}",
     ): Payment =
         createPayment(
             orderId = orderId,
+            userId = userId,
             totalAmount = paymentAmount,
             paymentAmount = paymentAmount,
             status = PaymentStatus.PAYMENT_COMPLETED,

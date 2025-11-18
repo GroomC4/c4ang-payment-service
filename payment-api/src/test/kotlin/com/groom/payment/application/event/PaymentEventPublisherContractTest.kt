@@ -17,7 +17,7 @@ class PaymentEventPublisherContractTest : ContractTestBase() {
     /**
      * Contract: should_publish_payment_completed_event.yml
      */
-    fun publishPaymentCompletedEvent() {
+    open fun publishPaymentCompletedEvent() {
         paymentEventPublisher.publishPaymentCompleted(
             paymentId = "PAY-12345",
             orderId = "ORD-12345",
@@ -31,7 +31,7 @@ class PaymentEventPublisherContractTest : ContractTestBase() {
     /**
      * Contract: should_publish_payment_failed_event.yml
      */
-    fun publishPaymentFailedEvent() {
+    open fun publishPaymentFailedEvent() {
         paymentEventPublisher.publishPaymentFailed(
             paymentId = "PAY-12346",
             orderId = "ORD-12346",
@@ -43,7 +43,7 @@ class PaymentEventPublisherContractTest : ContractTestBase() {
     /**
      * Contract: should_publish_payment_cancelled_event.yml
      */
-    fun publishPaymentCancelledEvent() {
+    open fun publishPaymentCancelledEvent() {
         paymentEventPublisher.publishPaymentCancelled(
             paymentId = "PAY-12347",
             orderId = "ORD-12347",
