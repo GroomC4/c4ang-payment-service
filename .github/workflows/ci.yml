@@ -57,6 +57,37 @@ jobs:
           path: '**/build/test-results/test/*.xml'
           reporter: java-junit
 
+  publish-contract-stubs:
+    name: Publish Contract Stubs
+    needs: continuous-integration
+    if: success() && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+          token: ${{ secrets.GROOM_GITHUB_ACTION_TOKEN }}
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Publish Contract Stubs to GitHub Packages
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew :payment-api:publish --no-daemon
+
   tracking-cd-workflow: # Job (ECR 푸시 + Config 업데이트 모두 수행)
     name: Build, Push and Trigger CD
     needs: continuous-integration

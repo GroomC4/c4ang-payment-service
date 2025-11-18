@@ -129,11 +129,11 @@ class PaymentEventPublisher(
     }
 
     /**
-     * BigDecimal을 Avro Decimal(ByteBuffer)로 변환
+     * BigDecimal을 Avro Decimal(BigDecimal)로 변환
+     * - Avro의 decimal logical type은 BigDecimal을 직접 사용
      */
-    private fun convertToAvroDecimal(value: BigDecimal): ByteBuffer {
-        val unscaledValue = value.setScale(2, BigDecimal.ROUND_HALF_UP).unscaledValue()
-        return ByteBuffer.wrap(unscaledValue.toByteArray())
+    private fun convertToAvroDecimal(value: BigDecimal): BigDecimal {
+        return value.setScale(2, BigDecimal.ROUND_HALF_UP)
     }
 
     /**

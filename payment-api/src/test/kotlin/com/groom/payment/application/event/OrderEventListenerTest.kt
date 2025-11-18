@@ -105,9 +105,8 @@ class OrderEventListenerTest : DescribeSpec({
 })
 
 /**
- * BigDecimal을 Avro Decimal(ByteBuffer)로 변환
+ * BigDecimal을 Avro Decimal(BigDecimal)로 변환
  */
-private fun convertToAvroDecimal(value: BigDecimal): ByteBuffer {
-    val unscaledValue = value.setScale(2, BigDecimal.ROUND_HALF_UP).unscaledValue()
-    return ByteBuffer.wrap(unscaledValue.toByteArray())
+private fun convertToAvroDecimal(value: BigDecimal): BigDecimal {
+    return value.setScale(2, BigDecimal.ROUND_HALF_UP)
 }
