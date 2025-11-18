@@ -1,0 +1,32 @@
+description: Payment Failed Event - 결제 실패 이벤트 발행
+name: should_publish_payment_failed_event
+label: payment_failed_event
+input:
+  triggeredBy: publishPaymentFailedEvent()
+outputMessage:
+  sentTo: payment.failed
+  headers:
+    kafka_messageKey: "ORD-12346"
+  body:
+    eventId: "550e8400-e29b-41d4-a716-446655440001"
+    eventTimestamp: 1699999999999
+    paymentId: "PAY-12346"
+    orderId: "ORD-12346"
+    userId: "USER-002"
+    failureReason: "카드 승인 거부"
+    failedAt: 1699999999999
+  matchers:
+    body:
+      - path: $.eventId
+        type: by_regex
+        value: "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+      - path: $.eventTimestamp
+        type: by_type
+      - path: $.paymentId
+        type: by_regex
+        value: "PAY-[0-9]+"
+      - path: $.orderId
+        type: by_regex
+        value: "ORD-[0-9]+"
+      - path: $.failedAt
+        type: by_type

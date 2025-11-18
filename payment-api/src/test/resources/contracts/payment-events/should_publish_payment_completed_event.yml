@@ -1,0 +1,34 @@
+description: Payment Completed Event - 결제 완료 이벤트 발행
+name: should_publish_payment_completed_event
+label: payment_completed_event
+input:
+  triggeredBy: publishPaymentCompletedEvent()
+outputMessage:
+  sentTo: payment.completed
+  headers:
+    kafka_messageKey: "ORD-12345"
+  body:
+    eventId: "550e8400-e29b-41d4-a716-446655440000"
+    eventTimestamp: 1699999999999
+    paymentId: "PAY-12345"
+    orderId: "ORD-12345"
+    userId: "USER-001"
+    totalAmount: "AQ==" # Base64 encoded bytes for decimal
+    paymentMethod: "CARD"
+    pgApprovalNumber: "APPROVE-12345"
+    completedAt: 1699999999999
+  matchers:
+    body:
+      - path: $.eventId
+        type: by_regex
+        value: "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+      - path: $.eventTimestamp
+        type: by_type
+      - path: $.paymentId
+        type: by_regex
+        value: "PAY-[0-9]+"
+      - path: $.orderId
+        type: by_regex
+        value: "ORD-[0-9]+"
+      - path: $.completedAt
+        type: by_type

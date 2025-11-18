@@ -1,6 +1,6 @@
 spring:
   application:
-    name: customer-api
+    name: payment-api
   jpa:
     hibernate:
       ddl-auto: none
@@ -21,7 +21,7 @@ logging:
     root: INFO
 
     # 프로젝트 패키지 - INFO 레벨
-    com.groom.ecommerce: INFO
+    com.groom.payment: INFO
 
     # Spring Framework - INFO
     org.springframework: INFO
@@ -35,17 +35,6 @@ logging:
   file:
     path: ./logs  # 로그 파일 저장 경로
 
-encryption:
-  encoder:
-    bcrypt-strength: 10
-
-security:
-  jwt:
-    secret: local-development-secret-please-change
-    issuer: ecommerce-service-api
-    accessTokenExpirationMinutes: 5
-    refreshTokenExpirationDays: 3
-
 springdoc:
   api-docs:
     path: /api-docs
@@ -55,8 +44,13 @@ springdoc:
 # Feign Client 설정 (FeignClientProperties로 관리)
 feign:
   clients:
-    store-service:
-      url: http://localhost:8081
+    customer-service:
+      url: http://localhost:8080
+      connect-timeout: 5000
+      read-timeout: 5000
+      logger-level: basic
+    order-service:
+      url: http://localhost:8082
       connect-timeout: 5000
       read-timeout: 5000
       logger-level: basic

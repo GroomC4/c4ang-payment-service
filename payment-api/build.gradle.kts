@@ -4,15 +4,18 @@ plugins {
     kotlin("jvm")
     kotlin("plugin.spring")
     kotlin("plugin.jpa")
+    id("org.springframework.cloud.contract") version "4.1.4"
+    `maven-publish`
 }
 
-// sourceSets {
-//     test {
-//         kotlin {
-//             srcDir("../c4ang-platform-core/testcontainers/kotlin")
-//         }
-//     }
-// }
+// Platform Core 버전 관리
+val platformCoreVersion = "1.2.3"
+// Contract Hub 버전 (Avro 이벤트 스키마)
+val contractHubVersion = "v1.0.0"
+// Confluent Platform 버전 (Schema Registry)
+val confluentVersion = "7.5.1"
+// Spring Cloud Contract 버전
+val springCloudContractVersion = "4.1.4"
 
 dependencies {
     // Kotlin
@@ -24,6 +27,18 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
+
+    // Kafka
+    implementation("org.springframework.kafka:spring-kafka")
+
+    // Contract Hub - Avro Event Schemas (JitPack)
+    implementation("com.github.GroomC4:c4ang-contract-hub:$contractHubVersion")
+
+    // Apache Avro
+    implementation("org.apache.avro:avro:1.11.3")
+
+    // Confluent Schema Registry & Avro Serializer
+    implementation("io.confluent:kafka-avro-serializer:$confluentVersion")
     // Spring Security 제거: Istio API Gateway가 인증/인가 처리
     // implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
@@ -47,6 +62,14 @@ dependencies {
     runtimeOnly("org.postgresql:postgresql")
     implementation("io.hypersistence:hypersistence-utils-hibernate-63:3.7.3")
 
+    // Platform Core - Testcontainers (테스트 전용)
+    testImplementation("com.groom.platform:testcontainers-starter:$platformCoreVersion")
+
+    // Spring Cloud Contract (Provider-side testing)
+    testImplementation("org.springframework.cloud:spring-cloud-starter-contract-verifier:$springCloudContractVersion")
+    testImplementation("io.rest-assured:rest-assured:5.3.2")
+    testImplementation("io.rest-assured:spring-mock-mvc:5.3.2")
+
     // Testing
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     // Spring Security Test 제거: Istio가 인증 처리
@@ -54,6 +77,7 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:postgresql")
+    testImplementation("org.testcontainers:kafka")
     testImplementation("org.testcontainers:testcontainers")
     testImplementation("io.kotest:kotest-runner-junit5:5.9.1")
     testImplementation("io.kotest:kotest-assertions-core:5.9.1")
@@ -85,8 +109,7 @@ tasks.withType<Test> {
 }
 
 tasks.test {
-    useJUnitPlatform {
-    }
+    useJUnitPlatform()
 }
 
 // 통합 테스트 전용 태스크 (Docker Compose 기반)
@@ -133,4 +156,36 @@ val dockerComposeDown by tasks.registering(Exec::class) {
 tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
     dependsOn(dockerComposeUp)
     finalizedBy(dockerComposeDown)
+}
+
+// Spring Cloud Contract 설정
+contracts {
+    testMode.set(org.springframework.cloud.contract.verifier.config.TestMode.MOCKMVC)
+    baseClassForTests.set("com.groom.payment.common.ContractTestBase")
+    contractsDslDir.set(file("src/test/resources/contracts"))
+}
+
+// Contract Stub 발행 설정 (Consumer가 사용할 수 있도록 GitHub Packages에 발행)
+publishing {
+    publications {
+        create<MavenPublication>("stubs") {
+            groupId = "com.groom"
+            artifactId = "payment-service-contract-stubs"
+            version = project.version.toString()
+
+            // Contract Stub JAR을 발행
+            artifact(tasks.named("verifierStubsJar"))
+        }
+    }
+
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/GroomC4/c4ang-payment-service")
+            credentials {
+                username = System.getenv("GITHUB_ACTOR") ?: project.findProperty("gpr.user") as String?
+                password = System.getenv("GITHUB_TOKEN") ?: project.findProperty("gpr.key") as String?
+            }
+        }
+    }
 }
