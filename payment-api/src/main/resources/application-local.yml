@@ -23,6 +23,22 @@ spring:
         format_sql: true  # SQL 포맷팅 활성화 (개발 환경)
         dialect: org.hibernate.dialect.PostgreSQLDialect
     show-sql: false  # logback으로 제어 (중복 방지)
+  # Kafka Configuration (Local)
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: payment-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: io.confluent.kafka.serializers.KafkaAvroDeserializer
+      properties:
+        specific.avro.reader: true
+        schema.registry.url: http://localhost:8081
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
+      properties:
+        schema.registry.url: http://localhost:8081
 
 # ====================================
 # local 환경 로그 레벨 (개발 환경)
@@ -45,24 +61,6 @@ logging:
 
   file:
     path: ./logs
-
-# Kafka Configuration (Local)
-spring:
-  kafka:
-    bootstrap-servers: localhost:9092
-    consumer:
-      group-id: payment-service
-      auto-offset-reset: earliest
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: io.confluent.kafka.serializers.KafkaAvroDeserializer
-      properties:
-        specific.avro.reader: true
-        schema.registry.url: http://localhost:8081
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
-      properties:
-        schema.registry.url: http://localhost:8081
 
 feign:
   clients:

@@ -9,7 +9,7 @@ plugins {
 }
 
 // Platform Core 버전 관리
-val platformCoreVersion = "1.2.3"
+val platformCoreVersion = "1.2.5"
 // Contract Hub 버전 (Avro 이벤트 스키마)
 val contractHubVersion = "v1.0.0"
 // Confluent Platform 버전 (Schema Registry)
@@ -61,6 +61,9 @@ dependencies {
     // Database
     runtimeOnly("org.postgresql:postgresql")
     implementation("io.hypersistence:hypersistence-utils-hibernate-63:3.7.3")
+
+    // Platform Core - DataSource (Production)
+    implementation("com.groom.platform:datasource-starter:$platformCoreVersion")
 
     // Platform Core - Testcontainers (테스트 전용)
     testImplementation("com.groom.platform:testcontainers-starter:$platformCoreVersion")

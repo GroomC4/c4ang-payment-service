@@ -1,4 +1,9 @@
+# TestContainers가 DataSource와 Redis를 자동으로 구성
 spring:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
   kafka:
     bootstrap-servers: localhost:9092
     consumer:
@@ -14,6 +19,15 @@ spring:
       value-serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
       properties:
         schema.registry.url: http://localhost:8081
+
+# TestContainers 설정
+testcontainers:
+  postgres:
+    enabled: true
+    image: postgres:15-alpine
+  redis:
+    enabled: true
+    image: redis:7-alpine
 
 logging:
   level:
