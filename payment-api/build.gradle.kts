@@ -9,7 +9,7 @@ plugins {
 }
 
 // Platform Core 버전 관리
-val platformCoreVersion = "1.2.7"
+val platformCoreVersion = "1.2.9"
 // Contract Hub 버전 (Avro 이벤트 스키마)
 val contractHubVersion = "v1.0.0"
 // Confluent Platform 버전 (Schema Registry)
