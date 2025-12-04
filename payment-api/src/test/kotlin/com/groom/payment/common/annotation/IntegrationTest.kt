@@ -1,16 +1,16 @@
 package com.groom.payment.common.annotation
 
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.test.context.ActiveProfiles
+import com.groom.platform.testcontainers.annotation.IntegrationTest as PlatformIntegrationTest
 
 /**
  * Payment Service 통합 테스트용 어노테이션
  *
- * Platform Core의 TestContainers가 자동으로 PostgreSQL과 Redis를 구성합니다.
+ * platform-core의 testcontainers-starter를 사용합니다.
  *
  * 사용 예시:
  * ```kotlin
  * @IntegrationTest
+ * @SpringBootTest
  * @AutoConfigureMockMvc
  * class PaymentControllerIntegrationTest {
  *     @Test
@@ -19,9 +19,16 @@ import org.springframework.test.context.ActiveProfiles
  *     }
  * }
  * ```
+ *
+ * 또는 IntegrationTestBase를 상속받아 사용:
+ * ```kotlin
+ * class PaymentServiceIntegrationTest : IntegrationTestBase() {
+ *     @Test
+ *     fun `테스트`() { ... }
+ * }
+ * ```
  */
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
-@SpringBootTest
-@ActiveProfiles("test")
+@PlatformIntegrationTest
 annotation class IntegrationTest

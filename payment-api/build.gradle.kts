@@ -9,9 +9,9 @@ plugins {
 }
 
 // Platform Core 버전 관리
-val platformCoreVersion = "1.2.9"
+val platformCoreVersion = "2.4.2"
 // Contract Hub 버전 (Avro 이벤트 스키마)
-val contractHubVersion = "v1.0.0"
+val contractHubVersion = "1.1.0"
 // Confluent Platform 버전 (Schema Registry)
 val confluentVersion = "7.5.1"
 // Spring Cloud Contract 버전
@@ -31,8 +31,8 @@ dependencies {
     // Kafka
     implementation("org.springframework.kafka:spring-kafka")
 
-    // Contract Hub - Avro Event Schemas (JitPack)
-    implementation("com.github.GroomC4:c4ang-contract-hub:$contractHubVersion")
+    // Contract Hub (Avro 스키마)
+    implementation("io.github.groomc4:c4ang-contract-hub:$contractHubVersion")
 
     // Apache Avro
     implementation("org.apache.avro:avro:1.11.3")
@@ -62,11 +62,11 @@ dependencies {
     runtimeOnly("org.postgresql:postgresql")
     implementation("io.hypersistence:hypersistence-utils-hibernate-63:3.7.3")
 
-    // Platform Core - DataSource (Production)
-    implementation("com.groom.platform:datasource-starter:$platformCoreVersion")
+    // Platform Core - DataSource (프로덕션 환경)
+    implementation("io.github.groomc4:platform-core:$platformCoreVersion")
 
     // Platform Core - Testcontainers (테스트 전용)
-    testImplementation("com.groom.platform:testcontainers-starter:$platformCoreVersion")
+    testImplementation("io.github.groomc4:testcontainers-starter:$platformCoreVersion")
 
     // Spring Cloud Contract (Provider-side testing)
     testImplementation("org.springframework.cloud:spring-cloud-starter-contract-verifier:$springCloudContractVersion")
@@ -85,6 +85,7 @@ dependencies {
     testImplementation("io.kotest:kotest-runner-junit5:5.9.1")
     testImplementation("io.kotest:kotest-assertions-core:5.9.1")
     testImplementation("io.mockk:mockk:1.14.5")
+    testImplementation("com.ninja-squad:springmockk:4.0.2")
 
     // K3s Module 추가
     testImplementation("org.testcontainers:k3s:1.19.7")

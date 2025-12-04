@@ -1,4 +1,4 @@
-package com.groom.payment.infrastructure.lock
+package com.groom.payment.adapter.outbound.lock
 
 import com.groom.payment.domain.service.PaymentLockManager
 import io.github.oshai.kotlinlogging.KotlinLogging

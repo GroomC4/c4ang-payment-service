@@ -1,17 +1,17 @@
-package com.groom.payment.presentation.web
+package com.groom.payment.adapter.inbound.web
 
+import com.groom.payment.adapter.inbound.web.dto.CancelPaymentRequest
+import com.groom.payment.adapter.inbound.web.dto.CancelPaymentResponse
+import com.groom.payment.adapter.inbound.web.dto.RequestPaymentRefundRequest
+import com.groom.payment.adapter.inbound.web.dto.RequestPaymentRefundResponse
+import com.groom.payment.adapter.inbound.web.dto.RequestPaymentRequest
+import com.groom.payment.adapter.inbound.web.dto.RequestPaymentResponse
 import com.groom.payment.application.dto.CancelPaymentCommand
 import com.groom.payment.application.dto.RequestPaymentCommand
 import com.groom.payment.application.dto.RequestPaymentRefundCommand
 import com.groom.payment.application.service.CancelPaymentService
 import com.groom.payment.application.service.RequestPaymentRefundService
 import com.groom.payment.application.service.RequestPaymentService
-import com.groom.payment.presentation.web.dto.CancelPaymentRequest
-import com.groom.payment.presentation.web.dto.CancelPaymentResponse
-import com.groom.payment.presentation.web.dto.RequestPaymentRefundRequest
-import com.groom.payment.presentation.web.dto.RequestPaymentRefundResponse
-import com.groom.payment.presentation.web.dto.RequestPaymentRequest
-import com.groom.payment.presentation.web.dto.RequestPaymentResponse
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter

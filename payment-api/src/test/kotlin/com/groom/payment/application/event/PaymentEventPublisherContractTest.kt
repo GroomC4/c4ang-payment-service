@@ -10,7 +10,6 @@ import java.math.BigDecimal
  * - Spring Cloud Contract Auto-generated tests가 이 클래스의 메서드를 호출
  */
 class PaymentEventPublisherContractTest : ContractTestBase() {
-
     @Autowired
     private lateinit var paymentEventPublisher: PaymentEventPublisher
 
@@ -24,7 +23,7 @@ class PaymentEventPublisherContractTest : ContractTestBase() {
             userId = "USER-001",
             totalAmount = BigDecimal("50000.00"),
             paymentMethod = "CARD",
-            pgApprovalNumber = "APPROVE-12345"
+            pgApprovalNumber = "APPROVE-12345",
         )
     }
 
@@ -36,7 +35,7 @@ class PaymentEventPublisherContractTest : ContractTestBase() {
             paymentId = "PAY-12346",
             orderId = "ORD-12346",
             userId = "USER-002",
-            failureReason = "카드 승인 거부"
+            failureReason = "카드 승인 거부",
         )
     }
 
@@ -48,7 +47,7 @@ class PaymentEventPublisherContractTest : ContractTestBase() {
             paymentId = "PAY-12347",
             orderId = "ORD-12347",
             userId = "USER-003",
-            cancellationReason = "STOCK_UNAVAILABLE"
+            cancellationReason = "STOCK_UNAVAILABLE",
         )
     }
 }

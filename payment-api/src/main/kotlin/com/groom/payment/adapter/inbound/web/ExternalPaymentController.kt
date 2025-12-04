@@ -1,15 +1,15 @@
-package com.groom.payment.presentation.web
+package com.groom.payment.adapter.inbound.web
 
+import com.groom.payment.adapter.inbound.web.dto.CancelPaymentRequest
+import com.groom.payment.adapter.inbound.web.dto.CancelPaymentResponse
+import com.groom.payment.adapter.inbound.web.dto.CompletePaymentRequest
+import com.groom.payment.adapter.inbound.web.dto.CompletePaymentResponse
 import com.groom.payment.application.dto.CompletePaymentCommand
 import com.groom.payment.application.dto.CompletePaymentRefundCommand
 import com.groom.payment.application.dto.MarkPaymentFailedCommand
 import com.groom.payment.application.service.CompletePaymentRefundService
 import com.groom.payment.application.service.CompletePaymentService
 import com.groom.payment.application.service.MarkPaymentFailedService
-import com.groom.payment.presentation.web.dto.CancelPaymentRequest
-import com.groom.payment.presentation.web.dto.CancelPaymentResponse
-import com.groom.payment.presentation.web.dto.CompletePaymentRequest
-import com.groom.payment.presentation.web.dto.CompletePaymentResponse
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.responses.ApiResponse

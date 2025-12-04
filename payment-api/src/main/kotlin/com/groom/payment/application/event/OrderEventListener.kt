@@ -22,7 +22,6 @@ private val logger = KotlinLogging.logger {}
 class OrderEventListener(
     // TODO: PaymentService 주입 (실제 결제 처리 로직)
 ) {
-
     /**
      * OrderCreated 이벤트 처리 (현재는 사용 안 함)
      * - 향후 확장을 위해 유지
@@ -30,9 +29,12 @@ class OrderEventListener(
     @KafkaListener(
         topics = [KafkaTopics.ORDER_CREATED],
         groupId = "\${spring.kafka.consumer.group-id}",
-        containerFactory = "kafkaListenerContainerFactory"
+        containerFactory = "kafkaListenerContainerFactory",
     )
-    fun handleOrderCreated(event: OrderCreated, acknowledgment: Acknowledgment) {
+    fun handleOrderCreated(
+        event: OrderCreated,
+        acknowledgment: Acknowledgment,
+    ) {
         try {
             logger.info {
                 "OrderCreated 이벤트 수신: orderId=${event.orderId}, " +
@@ -43,7 +45,6 @@ class OrderEventListener(
             acknowledgment.acknowledge()
 
             logger.info { "OrderCreated 이벤트 처리 완료: orderId=${event.orderId}" }
-
         } catch (e: Exception) {
             logger.error(e) { "OrderCreated 이벤트 처리 실패: orderId=${event.orderId}" }
             throw e
@@ -58,9 +59,12 @@ class OrderEventListener(
     @KafkaListener(
         topics = [KafkaTopics.ORDER_CONFIRMED],
         groupId = "\${spring.kafka.consumer.group-id}",
-        containerFactory = "kafkaListenerContainerFactory"
+        containerFactory = "kafkaListenerContainerFactory",
     )
-    fun handleOrderConfirmed(event: OrderConfirmed, acknowledgment: Acknowledgment) {
+    fun handleOrderConfirmed(
+        event: OrderConfirmed,
+        acknowledgment: Acknowledgment,
+    ) {
         try {
             logger.info {
                 "OrderConfirmed 이벤트 수신: orderId=${event.orderId}, " +
@@ -78,7 +82,6 @@ class OrderEventListener(
             acknowledgment.acknowledge()
 
             logger.info { "OrderConfirmed 이벤트 처리 완료: orderId=${event.orderId}" }
-
         } catch (e: Exception) {
             logger.error(e) { "OrderConfirmed 이벤트 처리 실패: orderId=${event.orderId}" }
             throw e
@@ -93,9 +96,12 @@ class OrderEventListener(
     @KafkaListener(
         topics = [KafkaTopics.STOCK_CONFIRMED],
         groupId = "\${spring.kafka.consumer.group-id}",
-        containerFactory = "kafkaListenerContainerFactory"
+        containerFactory = "kafkaListenerContainerFactory",
     )
-    fun handleStockConfirmed(event: StockConfirmed, acknowledgment: Acknowledgment) {
+    fun handleStockConfirmed(
+        event: StockConfirmed,
+        acknowledgment: Acknowledgment,
+    ) {
         try {
             logger.info {
                 "StockConfirmed 이벤트 수신: orderId=${event.orderId}, " +
@@ -113,7 +119,6 @@ class OrderEventListener(
             acknowledgment.acknowledge()
 
             logger.info { "StockConfirmed 이벤트 처리 완료: paymentId=${event.paymentId}" }
-
         } catch (e: Exception) {
             logger.error(e) { "StockConfirmed 이벤트 처리 실패: paymentId=${event.paymentId}" }
             throw e

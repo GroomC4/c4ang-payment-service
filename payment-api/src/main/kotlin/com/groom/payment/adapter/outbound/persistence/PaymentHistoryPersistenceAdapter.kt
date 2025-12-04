@@ -1,4 +1,4 @@
-package com.groom.payment.adapter.out.persistence
+package com.groom.payment.adapter.outbound.persistence
 
 import com.groom.payment.domain.model.PaymentHistory
 import com.groom.payment.domain.port.LoadPaymentHistoryPort

@@ -1,3 +1,6 @@
+server:
+  port: 8085
+
 spring:
   application:
     name: payment-api
@@ -26,7 +29,6 @@ logging:
     # Spring Framework - INFO
     org.springframework: INFO
     org.springframework.web: INFO
-    org.springframework.security: INFO
 
     # Hibernate/JPA - WARN (기본값)
     org.hibernate: WARN
@@ -44,11 +46,6 @@ springdoc:
 # Feign Client 설정 (FeignClientProperties로 관리)
 feign:
   clients:
-    customer-service:
-      url: http://localhost:8080
-      connect-timeout: 5000
-      read-timeout: 5000
-      logger-level: basic
     order-service:
       url: http://localhost:8082
       connect-timeout: 5000
@@ -60,3 +57,20 @@ feign:
         connectTimeout: 5000
         readTimeout: 5000
         loggerLevel: basic
+
+# Kafka Producer 설정
+kafka:
+  bootstrap-servers: localhost:9092
+  producer:
+    acks: all
+    retries: 3
+    batch-size: 16384
+    linger-ms: 10
+    buffer-memory: 33554432
+    max-in-flight-requests-per-connection: 5
+    enable-idempotence: true
+    compression-type: snappy
+    key-serializer: org.apache.kafka.common.serialization.StringSerializer
+    value-serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
+  schema-registry:
+    url: http://localhost:8081

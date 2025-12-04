@@ -1,4 +1,4 @@
-package com.groom.payment.presentation.web.dto
+package com.groom.payment.adapter.inbound.web.dto
 
 import com.groom.payment.domain.model.PaymentMethod
 import io.swagger.v3.oas.annotations.media.Schema

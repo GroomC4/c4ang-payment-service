@@ -1,4 +1,4 @@
-package com.groom.payment.presentation.web.dto
+package com.groom.payment.adapter.inbound.web.dto
 
 import com.groom.payment.application.dto.ListPaymentsResult
 import com.groom.payment.application.dto.PaginationInfo

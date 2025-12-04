@@ -1,4 +1,4 @@
-package com.groom.payment.infrastructure.adapter
+package com.groom.payment.adapter.outbound.client
 
 import com.groom.payment.application.dto.OrderInfo
 import com.groom.payment.domain.port.OrderPort

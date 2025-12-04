@@ -1,10 +1,8 @@
-package com.groom.payment.presentation.web.dto
+package com.groom.payment.adapter.inbound.web.dto
 
 import com.groom.payment.application.dto.GetPaymentResult
 import com.groom.payment.application.dto.OrderInfo
 import com.groom.payment.application.dto.PaymentHistoryItem
-import com.groom.payment.domain.model.PaymentMethod
-import com.groom.payment.domain.model.PaymentStatus
 import io.swagger.v3.oas.annotations.media.Schema
 import java.math.BigDecimal
 import java.time.LocalDateTime

@@ -1,12 +1,12 @@
-package com.groom.payment.presentation.web
+package com.groom.payment.adapter.inbound.web
 
+import com.groom.payment.adapter.inbound.web.dto.GetPaymentResponse
+import com.groom.payment.adapter.inbound.web.dto.ListPaymentsResponse
 import com.groom.payment.application.dto.GetPaymentQuery
 import com.groom.payment.application.dto.ListPaymentsQuery
 import com.groom.payment.application.service.GetPaymentService
 import com.groom.payment.application.service.ListPaymentsService
 import com.groom.payment.domain.model.PaymentStatus
-import com.groom.payment.presentation.web.dto.GetPaymentResponse
-import com.groom.payment.presentation.web.dto.ListPaymentsResponse
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter

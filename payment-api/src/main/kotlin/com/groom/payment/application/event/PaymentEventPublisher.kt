@@ -27,7 +27,6 @@ class PaymentEventPublisher(
     private val paymentFailedTemplate: KafkaTemplate<String, PaymentFailed>,
     private val paymentCancelledTemplate: KafkaTemplate<String, PaymentCancelled>,
 ) {
-
     /**
      * 결제 완료 이벤트 발행
      */
@@ -39,19 +38,22 @@ class PaymentEventPublisher(
         paymentMethod: String,
         pgApprovalNumber: String,
     ) {
-        val event = PaymentCompleted.newBuilder()
-            .setEventId(UUID.randomUUID().toString())
-            .setEventTimestamp(System.currentTimeMillis())
-            .setPaymentId(paymentId)
-            .setOrderId(orderId)
-            .setUserId(userId)
-            .setTotalAmount(convertToAvroDecimal(totalAmount))
-            .setPaymentMethod(convertToPaymentMethod(paymentMethod))
-            .setPgApprovalNumber(pgApprovalNumber)
-            .setCompletedAt(System.currentTimeMillis())
-            .build()
+        val event =
+            PaymentCompleted
+                .newBuilder()
+                .setEventId(UUID.randomUUID().toString())
+                .setEventTimestamp(System.currentTimeMillis())
+                .setPaymentId(paymentId)
+                .setOrderId(orderId)
+                .setUserId(userId)
+                .setTotalAmount(convertToAvroDecimal(totalAmount))
+                .setPaymentMethod(convertToPaymentMethod(paymentMethod))
+                .setPgApprovalNumber(pgApprovalNumber)
+                .setCompletedAt(System.currentTimeMillis())
+                .build()
 
-        paymentCompletedTemplate.send(KafkaTopics.PAYMENT_COMPLETED, orderId, event)
+        paymentCompletedTemplate
+            .send(KafkaTopics.PAYMENT_COMPLETED, orderId, event)
             .whenComplete { result, ex ->
                 if (ex == null) {
                     logger.info {
@@ -73,17 +75,20 @@ class PaymentEventPublisher(
         userId: String,
         failureReason: String,
     ) {
-        val event = PaymentFailed.newBuilder()
-            .setEventId(UUID.randomUUID().toString())
-            .setEventTimestamp(System.currentTimeMillis())
-            .setPaymentId(paymentId)
-            .setOrderId(orderId)
-            .setUserId(userId)
-            .setFailureReason(failureReason)
-            .setFailedAt(System.currentTimeMillis())
-            .build()
+        val event =
+            PaymentFailed
+                .newBuilder()
+                .setEventId(UUID.randomUUID().toString())
+                .setEventTimestamp(System.currentTimeMillis())
+                .setPaymentId(paymentId)
+                .setOrderId(orderId)
+                .setUserId(userId)
+                .setFailureReason(failureReason)
+                .setFailedAt(System.currentTimeMillis())
+                .build()
 
-        paymentFailedTemplate.send(KafkaTopics.PAYMENT_FAILED, orderId, event)
+        paymentFailedTemplate
+            .send(KafkaTopics.PAYMENT_FAILED, orderId, event)
             .whenComplete { result, ex ->
                 if (ex == null) {
                     logger.info {
@@ -105,17 +110,20 @@ class PaymentEventPublisher(
         userId: String,
         cancellationReason: String,
     ) {
-        val event = PaymentCancelled.newBuilder()
-            .setEventId(UUID.randomUUID().toString())
-            .setEventTimestamp(System.currentTimeMillis())
-            .setPaymentId(paymentId)
-            .setOrderId(orderId)
-            .setUserId(userId)
-            .setCancellationReason(convertToCancellationReason(cancellationReason))
-            .setCancelledAt(System.currentTimeMillis())
-            .build()
+        val event =
+            PaymentCancelled
+                .newBuilder()
+                .setEventId(UUID.randomUUID().toString())
+                .setEventTimestamp(System.currentTimeMillis())
+                .setPaymentId(paymentId)
+                .setOrderId(orderId)
+                .setUserId(userId)
+                .setCancellationReason(convertToCancellationReason(cancellationReason))
+                .setCancelledAt(System.currentTimeMillis())
+                .build()
 
-        paymentCancelledTemplate.send(KafkaTopics.PAYMENT_CANCELLED, orderId, event)
+        paymentCancelledTemplate
+            .send(KafkaTopics.PAYMENT_CANCELLED, orderId, event)
             .whenComplete { result, ex ->
                 if (ex == null) {
                     logger.info {
@@ -132,15 +140,13 @@ class PaymentEventPublisher(
      * BigDecimal을 Avro Decimal(BigDecimal)로 변환
      * - Avro의 decimal logical type은 BigDecimal을 직접 사용
      */
-    private fun convertToAvroDecimal(value: BigDecimal): BigDecimal {
-        return value.setScale(2, BigDecimal.ROUND_HALF_UP)
-    }
+    private fun convertToAvroDecimal(value: BigDecimal): BigDecimal = value.setScale(2, BigDecimal.ROUND_HALF_UP)
 
     /**
      * String을 PaymentMethod Enum으로 변환
      */
-    private fun convertToPaymentMethod(method: String): PaymentMethod {
-        return when (method.uppercase()) {
+    private fun convertToPaymentMethod(method: String): PaymentMethod =
+        when (method.uppercase()) {
             "CARD" -> PaymentMethod.CARD
             "BANK_TRANSFER" -> PaymentMethod.BANK_TRANSFER
             "KAKAO_PAY" -> PaymentMethod.KAKAO_PAY
@@ -148,18 +154,16 @@ class PaymentEventPublisher(
             "TOSS" -> PaymentMethod.TOSS
             else -> PaymentMethod.CARD
         }
-    }
 
     /**
      * String을 PaymentCancellationReason Enum으로 변환
      */
-    private fun convertToCancellationReason(reason: String): PaymentCancellationReason {
-        return when (reason.uppercase()) {
+    private fun convertToCancellationReason(reason: String): PaymentCancellationReason =
+        when (reason.uppercase()) {
             "STOCK_UNAVAILABLE" -> PaymentCancellationReason.STOCK_UNAVAILABLE
             "ADMIN_CANCEL" -> PaymentCancellationReason.ADMIN_CANCEL
             "USER_CANCEL" -> PaymentCancellationReason.USER_CANCEL
             "SYSTEM_ERROR" -> PaymentCancellationReason.SYSTEM_ERROR
             else -> PaymentCancellationReason.SYSTEM_ERROR
         }
-    }
 }

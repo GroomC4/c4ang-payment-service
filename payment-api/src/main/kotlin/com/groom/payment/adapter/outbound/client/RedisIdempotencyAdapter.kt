@@ -1,4 +1,4 @@
-package com.groom.payment.infrastructure.adapter
+package com.groom.payment.adapter.outbound.client
 
 import com.groom.payment.domain.port.IdempotencyPort
 import io.github.oshai.kotlinlogging.KotlinLogging
