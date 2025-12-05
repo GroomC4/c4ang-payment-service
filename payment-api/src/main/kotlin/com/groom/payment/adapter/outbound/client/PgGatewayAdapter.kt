@@ -1,6 +1,8 @@
 package com.groom.payment.adapter.outbound.client
 
 import com.groom.payment.domain.port.PaymentGatewayPort
+import com.groom.payment.domain.port.PgCancelResult
+import com.groom.payment.domain.port.PgRefundResult
 import com.groom.payment.domain.port.PgRequestResult
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Component
@@ -43,6 +45,40 @@ class PgGatewayAdapter : PaymentGatewayPort {
             pgTransactionId = pgTransactionId,
             paymentUrl = paymentUrl,
             expiresAt = expiresAt,
+        )
+    }
+
+    override fun cancelPayment(pgTransactionId: String): PgCancelResult {
+        logger.info { "PG Stub - 결제 취소 요청: pgTransactionId=$pgTransactionId" }
+
+        // TODO: 실제 PG사 결제 취소 API 호출
+        val pgCancelId = "CANCEL-${UUID.randomUUID()}"
+
+        logger.info { "PG Stub - 결제 취소 성공: pgTransactionId=$pgTransactionId, pgCancelId=$pgCancelId" }
+
+        return PgCancelResult(
+            success = true,
+            cancelledAt = LocalDateTime.now(),
+            pgCancelId = pgCancelId,
+        )
+    }
+
+    override fun requestRefund(
+        pgTransactionId: String,
+        amount: BigDecimal,
+    ): PgRefundResult {
+        logger.info { "PG Stub - 환불 요청: pgTransactionId=$pgTransactionId, amount=$amount" }
+
+        // TODO: 실제 PG사 환불 API 호출
+        val refundId = "REFUND-${UUID.randomUUID()}"
+
+        logger.info { "PG Stub - 환불 성공: pgTransactionId=$pgTransactionId, refundId=$refundId, amount=$amount" }
+
+        return PgRefundResult(
+            success = true,
+            refundId = refundId,
+            refundedAmount = amount,
+            refundedAt = LocalDateTime.now(),
         )
     }
 }

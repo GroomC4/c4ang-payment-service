@@ -1,5 +1,6 @@
 package com.groom.payment.domain.event
 
+import java.math.BigDecimal
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -10,12 +11,15 @@ import java.util.UUID
  *
  * 발행 시점: payment.complete() 호출 시
  * 처리:
- * - OrderPaymentCompletedEventHandler: 주문 상태를 PAYMENT_COMPLETED로 변경
- * - 외부 감사 로그 시스템으로 전송
+ * - PaymentCompletedEventHandler: Kafka payment.completed 이벤트 발행
+ * - Product Service가 소비하여 재고 확정
  */
 data class PaymentCompletedEvent(
     val paymentId: UUID,
     val orderId: UUID,
+    val userId: UUID,
+    val totalAmount: BigDecimal,
+    val paymentMethod: String,
     val pgApprovalNumber: String,
     val completedAt: LocalDateTime,
     val occurredAt: LocalDateTime,

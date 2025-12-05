@@ -76,6 +76,9 @@ class CompletePaymentServiceTest :
                 PaymentCompletedEvent(
                     paymentId = payment.id,
                     orderId = payment.orderId,
+                    userId = payment.userId,
+                    totalAmount = payment.totalAmount!!,
+                    paymentMethod = payment.method!!.name,
                     pgApprovalNumber = pgApprovalNumber,
                     completedAt = payment.completedAt!!,
                     occurredAt = payment.completedAt!!,
@@ -217,6 +220,9 @@ class CompletePaymentServiceTest :
                 PaymentCompletedEvent(
                     paymentId = payment.id,
                     orderId = payment.orderId,
+                    userId = payment.userId,
+                    totalAmount = payment.totalAmount!!,
+                    paymentMethod = payment.method!!.name,
                     pgApprovalNumber = pgApprovalNumber,
                     completedAt = payment.completedAt!!,
                     occurredAt = payment.completedAt!!,

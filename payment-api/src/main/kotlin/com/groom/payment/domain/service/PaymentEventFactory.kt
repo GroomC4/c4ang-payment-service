@@ -57,10 +57,19 @@ class PaymentEventFactory {
         require(payment.completedAt != null) {
             "Completed at must not be null"
         }
+        require(payment.totalAmount != null) {
+            "Total amount must not be null"
+        }
+        require(payment.method != null) {
+            "Payment method must not be null"
+        }
 
         return PaymentCompletedEvent(
             paymentId = payment.id,
             orderId = payment.orderId,
+            userId = payment.userId,
+            totalAmount = payment.totalAmount!!,
+            paymentMethod = payment.method!!.name,
             pgApprovalNumber = payment.pgApprovalNumber!!,
             completedAt = payment.completedAt!!,
             occurredAt = LocalDateTime.now(),
@@ -82,6 +91,7 @@ class PaymentEventFactory {
         return PaymentCancelledEvent(
             paymentId = payment.id,
             orderId = payment.orderId,
+            userId = payment.userId,
             previousStatus = previousStatus,
             reason = reason,
             occurredAt = LocalDateTime.now(),
@@ -102,6 +112,7 @@ class PaymentEventFactory {
         return PaymentFailedEvent(
             paymentId = payment.id,
             orderId = payment.orderId,
+            userId = payment.userId,
             reason = reason,
             occurredAt = LocalDateTime.now(),
         )

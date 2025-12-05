@@ -1,23 +1,23 @@
-package com.groom.payment.application.event
+package com.groom.payment.adapter.outbound.kafka
 
 import com.groom.payment.common.ContractTestBase
 import org.springframework.beans.factory.annotation.Autowired
 import java.math.BigDecimal
 
 /**
- * Payment Event Publisher Contract Test
+ * Payment Event Kafka Producer Contract Test
  * - Contract 파일에 정의된 이벤트를 실제로 발행하는지 검증
  * - Spring Cloud Contract Auto-generated tests가 이 클래스의 메서드를 호출
  */
-class PaymentEventPublisherContractTest : ContractTestBase() {
+class PaymentEventKafkaProducerContractTest : ContractTestBase() {
     @Autowired
-    private lateinit var paymentEventPublisher: PaymentEventPublisher
+    private lateinit var paymentEventKafkaProducer: PaymentEventKafkaProducer
 
     /**
      * Contract: should_publish_payment_completed_event.yml
      */
     open fun publishPaymentCompletedEvent() {
-        paymentEventPublisher.publishPaymentCompleted(
+        paymentEventKafkaProducer.publishPaymentCompleted(
             paymentId = "PAY-12345",
             orderId = "ORD-12345",
             userId = "USER-001",
@@ -31,7 +31,7 @@ class PaymentEventPublisherContractTest : ContractTestBase() {
      * Contract: should_publish_payment_failed_event.yml
      */
     open fun publishPaymentFailedEvent() {
-        paymentEventPublisher.publishPaymentFailed(
+        paymentEventKafkaProducer.publishPaymentFailed(
             paymentId = "PAY-12346",
             orderId = "ORD-12346",
             userId = "USER-002",
@@ -43,7 +43,7 @@ class PaymentEventPublisherContractTest : ContractTestBase() {
      * Contract: should_publish_payment_cancelled_event.yml
      */
     open fun publishPaymentCancelledEvent() {
-        paymentEventPublisher.publishPaymentCancelled(
+        paymentEventKafkaProducer.publishPaymentCancelled(
             paymentId = "PAY-12347",
             orderId = "ORD-12347",
             userId = "USER-003",

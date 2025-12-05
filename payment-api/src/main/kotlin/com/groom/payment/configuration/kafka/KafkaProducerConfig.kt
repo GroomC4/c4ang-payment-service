@@ -3,6 +3,7 @@ package com.groom.payment.configuration.kafka
 import com.groom.ecommerce.payment.event.avro.PaymentCancelled
 import com.groom.ecommerce.payment.event.avro.PaymentCompleted
 import com.groom.ecommerce.payment.event.avro.PaymentFailed
+import com.groom.ecommerce.saga.event.avro.PaymentInitializationFailed
 import io.confluent.kafka.serializers.KafkaAvroSerializer
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.serialization.StringSerializer
@@ -58,4 +59,8 @@ class KafkaProducerConfig {
     @Bean
     fun paymentCancelledKafkaTemplate(): KafkaTemplate<String, PaymentCancelled> =
         KafkaTemplate(producerFactory() as ProducerFactory<String, PaymentCancelled>)
+
+    @Bean
+    fun paymentInitializationFailedKafkaTemplate(): KafkaTemplate<String, PaymentInitializationFailed> =
+        KafkaTemplate(producerFactory() as ProducerFactory<String, PaymentInitializationFailed>)
 }
