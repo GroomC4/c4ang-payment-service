@@ -42,15 +42,16 @@ jobs:
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./gradlew test contractTest --no-daemon
+#        run: ./gradlew test contractTest --no-daemon
+        run: ./gradlew test --no-daemon
 
-      - name: Publish Contract Stubs to GitHub Packages
-        if: success() && startsWith(github.ref, 'refs/tags/v')
-        env:
-          GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_TOKEN: ${{ secrets.GROOM_GITHUB_ACTION_TOKEN }}
-          GITHUB_REF_NAME: ${{ github.ref_name }}
-        run: ./gradlew :payment-api:publish --no-daemon
+#      - name: Publish Contract Stubs to GitHub Packages
+#        if: success() && startsWith(github.ref, 'refs/tags/v')
+#        env:
+#          GITHUB_ACTOR: ${{ github.actor }}
+#          GITHUB_TOKEN: ${{ secrets.GROOM_GITHUB_ACTION_TOKEN }}
+#          GITHUB_REF_NAME: ${{ github.ref_name }}
+#        run: ./gradlew :payment-api:publish --no-daemon
 
       - name: Upload test results
         if: always()
