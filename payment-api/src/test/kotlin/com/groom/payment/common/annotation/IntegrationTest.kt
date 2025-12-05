@@ -1,6 +1,7 @@
 package com.groom.payment.common.annotation
 
 import com.groom.platform.testcontainers.annotation.IntegrationTest as PlatformIntegrationTest
+import org.springframework.test.context.ActiveProfiles
 
 /**
  * Payment Service 통합 테스트용 어노테이션
@@ -30,5 +31,6 @@ import com.groom.platform.testcontainers.annotation.IntegrationTest as PlatformI
  */
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
+@ActiveProfiles("test")
 @PlatformIntegrationTest
 annotation class IntegrationTest
