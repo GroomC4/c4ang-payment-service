@@ -1,4 +1,4 @@
-package com.groom.payment.application.event
+package com.groom.payment.adapter.outbound.kafka
 
 import com.groom.ecommerce.payment.event.avro.PaymentCancellationReason
 import com.groom.ecommerce.payment.event.avro.PaymentCancelled
@@ -6,31 +6,31 @@ import com.groom.ecommerce.payment.event.avro.PaymentCompleted
 import com.groom.ecommerce.payment.event.avro.PaymentFailed
 import com.groom.ecommerce.payment.event.avro.PaymentMethod
 import com.groom.payment.configuration.kafka.KafkaTopics
+import com.groom.payment.domain.port.PaymentEventPublishPort
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
-import java.nio.ByteBuffer
 import java.util.UUID
 
 private val logger = KotlinLogging.logger {}
 
 /**
- * Payment 이벤트 발행
+ * Payment 이벤트 Kafka Producer
  * - PaymentCompleted: 결제 완료 시 Order Service에 통보
  * - PaymentFailed: 결제 실패 시 Order Service에 통보
  * - PaymentCancelled: 결제 취소 시 Order Service에 통보
  */
 @Component
-class PaymentEventPublisher(
+class PaymentEventKafkaProducer(
     private val paymentCompletedTemplate: KafkaTemplate<String, PaymentCompleted>,
     private val paymentFailedTemplate: KafkaTemplate<String, PaymentFailed>,
     private val paymentCancelledTemplate: KafkaTemplate<String, PaymentCancelled>,
-) {
+) : PaymentEventPublishPort {
     /**
      * 결제 완료 이벤트 발행
      */
-    fun publishPaymentCompleted(
+    override fun publishPaymentCompleted(
         paymentId: String,
         orderId: String,
         userId: String,
@@ -69,7 +69,7 @@ class PaymentEventPublisher(
     /**
      * 결제 실패 이벤트 발행
      */
-    fun publishPaymentFailed(
+    override fun publishPaymentFailed(
         paymentId: String,
         orderId: String,
         userId: String,
@@ -104,7 +104,7 @@ class PaymentEventPublisher(
     /**
      * 결제 취소 이벤트 발행
      */
-    fun publishPaymentCancelled(
+    override fun publishPaymentCancelled(
         paymentId: String,
         orderId: String,
         userId: String,

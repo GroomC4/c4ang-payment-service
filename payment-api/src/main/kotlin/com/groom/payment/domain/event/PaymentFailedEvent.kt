@@ -10,12 +10,13 @@ import java.util.UUID
  *
  * 발행 시점: payment.markFailed() 호출 시
  * 처리:
- * - OrderPaymentFailedEventHandler: 주문 취소 및 재고 복구
- * - 외부 감사 로그 시스템으로 전송
+ * - PaymentFailedEventHandler: Kafka payment.failed 이벤트 발행
+ * - Order Service가 소비하여 주문 취소
  */
 data class PaymentFailedEvent(
     val paymentId: UUID,
     val orderId: UUID,
+    val userId: UUID,
     val reason: String,
     val occurredAt: LocalDateTime,
 )
