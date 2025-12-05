@@ -91,6 +91,7 @@ class PaymentEventFactory {
         return PaymentCancelledEvent(
             paymentId = payment.id,
             orderId = payment.orderId,
+            userId = payment.userId,
             previousStatus = previousStatus,
             reason = reason,
             occurredAt = LocalDateTime.now(),

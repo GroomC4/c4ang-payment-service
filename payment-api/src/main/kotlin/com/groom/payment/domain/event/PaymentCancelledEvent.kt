@@ -18,6 +18,7 @@ import java.util.UUID
 data class PaymentCancelledEvent(
     val paymentId: UUID,
     val orderId: UUID,
+    val userId: UUID,
     val previousStatus: PaymentStatus,
     val reason: String,
     val occurredAt: LocalDateTime,

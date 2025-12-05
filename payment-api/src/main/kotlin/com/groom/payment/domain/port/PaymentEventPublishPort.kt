@@ -38,4 +38,15 @@ interface PaymentEventPublishPort {
         userId: String,
         cancellationReason: String,
     )
+
+    /**
+     * SAGA 결제 초기화 실패 이벤트 발행
+     *
+     * order.confirmed 이벤트 처리 중 결제 대기 생성에 실패한 경우 발행
+     * Order Service가 이를 수신하여 주문 취소 처리
+     */
+    fun publishPaymentInitializationFailed(
+        orderId: String,
+        failureReason: String,
+    )
 }

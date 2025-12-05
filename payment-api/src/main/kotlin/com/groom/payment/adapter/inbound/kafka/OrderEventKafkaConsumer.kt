@@ -4,6 +4,7 @@ import com.groom.ecommerce.order.event.avro.OrderConfirmed
 import com.groom.payment.application.dto.CreatePaymentWaitCommand
 import com.groom.payment.application.service.CreatePaymentWaitService
 import com.groom.payment.configuration.kafka.KafkaTopics
+import com.groom.payment.domain.port.PaymentEventPublishPort
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.kafka.support.Acknowledgment
@@ -18,11 +19,16 @@ private val logger = KotlinLogging.logger {}
  * Payment Service가 구독하는 Order 관련 이벤트:
  * - OrderConfirmed: 재고 예약 완료 → 결제 대기(PAYMENT_WAIT) 생성
  *
+ * 실패 시:
+ * - saga.payment-initialization.failed 이벤트 발행
+ * - Order Service가 주문 취소 처리
+ *
  * 참고: c4ang-contract-hub/docs/event-flows/order-creation/success.md
  */
 @Component
 class OrderEventKafkaConsumer(
     private val createPaymentWaitService: CreatePaymentWaitService,
+    private val paymentEventPublishPort: PaymentEventPublishPort,
 ) {
     /**
      * OrderConfirmed 이벤트 처리
@@ -31,6 +37,8 @@ class OrderEventKafkaConsumer(
      * 처리: 결제 대기 상태(PAYMENT_WAIT) Payment 생성
      *
      * SAGA 플로우: stock.reserved → order.confirmed → Payment 대기 생성
+     *
+     * 실패 시: saga.payment-initialization.failed 발행 → Order Service가 주문 취소
      */
     @KafkaListener(
         topics = [KafkaTopics.ORDER_CONFIRMED],
@@ -66,7 +74,24 @@ class OrderEventKafkaConsumer(
             }
         } catch (e: Exception) {
             logger.error(e) { "OrderConfirmed 이벤트 처리 실패: orderId=${event.orderId}" }
-            throw e
+
+            // SAGA 보상: 결제 초기화 실패 이벤트 발행
+            try {
+                paymentEventPublishPort.publishPaymentInitializationFailed(
+                    orderId = event.orderId,
+                    failureReason = e.message ?: "Unknown error during payment initialization",
+                )
+                logger.info { "PaymentInitializationFailed 이벤트 발행 완료: orderId=${event.orderId}" }
+
+                // 보상 이벤트 발행 후 커밋 (재처리 방지)
+                acknowledgment.acknowledge()
+            } catch (publishEx: Exception) {
+                logger.error(publishEx) {
+                    "PaymentInitializationFailed 이벤트 발행 실패: orderId=${event.orderId}"
+                }
+                // 보상 이벤트 발행도 실패하면 재처리를 위해 throw
+                throw e
+            }
         }
     }
 }
