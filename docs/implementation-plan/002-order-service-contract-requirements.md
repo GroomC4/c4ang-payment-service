@@ -39,7 +39,7 @@
 
 **Request**:
 ```http
-GET /api/v1/orders/{orderId}
+GET /internal/v1/orders/{orderId}
 ```
 
 **Expected Response** (200 OK):
@@ -75,7 +75,7 @@ GET /api/v1/orders/{orderId}
 
 **Request**:
 ```http
-POST /api/v1/orders/{orderId}/payment-pending
+POST /internal/v1/orders/{orderId}/payment-pending
 
 {
   "paymentId": "uuid"
@@ -109,7 +109,7 @@ POST /api/v1/orders/{orderId}/payment-pending
 
 **Request**:
 ```http
-GET /api/v1/orders/{orderId}/has-payment
+GET /internal/v1/orders/{orderId}/has-payment
 ```
 
 **Expected Response** (200 OK):
@@ -150,7 +150,7 @@ Contract.make {
 
     request {
         method GET()
-        url("/api/v1/orders/550e8400-e29b-41d4-a716-446655440000")
+        url("/internal/v1/orders/550e8400-e29b-41d4-a716-446655440000")
         headers {
             accept(applicationJson())
             header("Authorization", "Bearer test-token")
@@ -188,7 +188,7 @@ Contract.make {
 
     request {
         method POST()
-        url("/api/v1/orders/550e8400-e29b-41d4-a716-446655440000/payment-pending")
+        url("/internal/v1/orders/550e8400-e29b-41d4-a716-446655440000/payment-pending")
         headers {
             contentType(applicationJson())
             header("Authorization", "Bearer test-token")
@@ -219,7 +219,7 @@ Contract.make {
 
     request {
         method GET()
-        url("/api/v1/orders/550e8400-e29b-41d4-a716-446655440000/has-payment")
+        url("/internal/v1/orders/550e8400-e29b-41d4-a716-446655440000/has-payment")
         headers {
             accept(applicationJson())
             header("Authorization", "Bearer test-token")
@@ -253,16 +253,16 @@ Contract.make {
     configuration = [FeignClientConfig::class],
 )
 interface OrderFeignClient {
-    @GetMapping("/api/v1/orders/{orderId}")
+    @GetMapping("/internal/v1/orders/{orderId}")
     fun getOrder(@PathVariable orderId: UUID): OrderResponse
 
-    @PostMapping("/api/v1/orders/{orderId}/payment-pending")
+    @PostMapping("/internal/v1/orders/{orderId}/payment-pending")
     fun markPaymentPending(
         @PathVariable orderId: UUID,
         @RequestBody request: PaymentPendingRequest,
     ): PaymentPendingResponse
 
-    @GetMapping("/api/v1/orders/{orderId}/has-payment")
+    @GetMapping("/internal/v1/orders/{orderId}/has-payment")
     fun hasPayment(@PathVariable orderId: UUID): HasPaymentResponse
 }
 ```
