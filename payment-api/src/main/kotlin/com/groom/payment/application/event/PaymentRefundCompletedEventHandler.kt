@@ -12,12 +12,16 @@ import org.springframework.transaction.event.TransactionalEventListener
  * 환불 완료 이벤트 핸들러
  *
  * PaymentRefundCompletedEvent 수신 시:
- * - Order 상태를 REFUND_COMPLETED로 변경
- * - 재고 복구 (환불 완료 시 재고 증가)
+ * - 환불 완료 로깅
+ * - 필요 시 Kafka 이벤트 발행 (payment.refunded)
  *
  * 트랜잭션:
  * - AFTER_COMMIT: Payment 트랜잭션이 커밋된 후 실행
  * - REQUIRES_NEW: 독립 트랜잭션 (Payment와 분리)
+ *
+ * 참고:
+ * - 환불 완료 알림은 Order Service가 처리
+ * - 재고 복구는 Product Service가 처리 (필요 시)
  */
 @Component
 class PaymentRefundCompletedEventHandler {
@@ -28,8 +32,15 @@ class PaymentRefundCompletedEventHandler {
     fun handle(event: PaymentRefundCompletedEvent) {
         logger.info {
             "PaymentRefundCompletedEvent received: orderId=${event.orderId}, " +
-                "paymentId=${event.paymentId}, refundTransactionId=${event.refundTransactionId}"
+                "paymentId=${event.paymentId}, refundTransactionId=${event.refundTransactionId}, " +
+                "refundedAt=${event.refundedAt}"
         }
-        TODO("Order 서비스 연동 필요")
+
+        // TODO: 필요 시 Kafka payment.refunded 이벤트 발행
+        // paymentEventPublishPort.publishPaymentRefunded(...)
+
+        logger.info {
+            "환불 완료 처리 종료: paymentId=${event.paymentId}"
+        }
     }
 }

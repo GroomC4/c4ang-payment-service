@@ -29,6 +29,30 @@ interface PaymentGatewayPort {
         amount: BigDecimal,
         orderNumber: String,
     ): PgRequestResult
+
+    /**
+     * PG사에 결제 취소 요청
+     *
+     * 결제 완료 상태(PAYMENT_COMPLETED)에서 취소하는 경우 호출
+     *
+     * @param pgTransactionId PG사 거래 ID
+     * @return 결제 취소 결과
+     */
+    fun cancelPayment(pgTransactionId: String): PgCancelResult
+
+    /**
+     * PG사에 환불 요청
+     *
+     * 부분 환불 지원
+     *
+     * @param pgTransactionId PG사 거래 ID
+     * @param amount 환불 금액
+     * @return 환불 결과
+     */
+    fun requestRefund(
+        pgTransactionId: String,
+        amount: BigDecimal,
+    ): PgRefundResult
 }
 
 /**
@@ -42,4 +66,32 @@ data class PgRequestResult(
     val pgTransactionId: String,
     val paymentUrl: String,
     val expiresAt: LocalDateTime,
+)
+
+/**
+ * PG 결제 취소 결과
+ *
+ * @property success 취소 성공 여부
+ * @property cancelledAt 취소 시각
+ * @property pgCancelId PG사 취소 거래 ID (선택)
+ */
+data class PgCancelResult(
+    val success: Boolean,
+    val cancelledAt: LocalDateTime,
+    val pgCancelId: String? = null,
+)
+
+/**
+ * PG 환불 결과
+ *
+ * @property success 환불 성공 여부
+ * @property refundId 환불 ID
+ * @property refundedAmount 환불 금액
+ * @property refundedAt 환불 시각
+ */
+data class PgRefundResult(
+    val success: Boolean,
+    val refundId: String,
+    val refundedAmount: BigDecimal,
+    val refundedAt: LocalDateTime,
 )
