@@ -3,12 +3,14 @@ package com.groom.payment.adapter.inbound.kafka
 import com.groom.ecommerce.order.event.avro.OrderConfirmed
 import com.groom.payment.application.dto.CreatePaymentWaitCommand
 import com.groom.payment.application.service.CreatePaymentWaitService
+import com.groom.payment.common.idempotency.IdempotencyService
 import com.groom.payment.configuration.kafka.KafkaTopics
 import com.groom.payment.domain.port.PaymentEventPublishPort
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.kafka.support.Acknowledgment
 import org.springframework.stereotype.Component
+import java.time.Duration
 import java.util.UUID
 
 private val logger = KotlinLogging.logger {}
@@ -18,6 +20,10 @@ private val logger = KotlinLogging.logger {}
  *
  * Payment Service가 구독하는 Order 관련 이벤트:
  * - OrderConfirmed: 재고 예약 완료 → 결제 대기(PAYMENT_WAIT) 생성
+ *
+ * 멱등성:
+ * - eventId 기반 중복 처리 방지
+ * - Redis SETNX를 통한 원자적 체크
  *
  * 실패 시:
  * - saga.payment-initialization.failed 이벤트 발행
@@ -29,7 +35,13 @@ private val logger = KotlinLogging.logger {}
 class OrderEventKafkaConsumer(
     private val createPaymentWaitService: CreatePaymentWaitService,
     private val paymentEventPublishPort: PaymentEventPublishPort,
+    private val idempotencyService: IdempotencyService,
 ) {
+    companion object {
+        private val IDEMPOTENCY_TTL = Duration.ofHours(24)
+        private const val IDEMPOTENCY_PREFIX = "order-confirmed"
+    }
+
     /**
      * OrderConfirmed 이벤트 처리
      *
@@ -49,13 +61,23 @@ class OrderEventKafkaConsumer(
         event: OrderConfirmed,
         acknowledgment: Acknowledgment,
     ) {
+        val idempotencyKey = "$IDEMPOTENCY_PREFIX:${event.eventId}"
+
+        // 멱등성 체크
+        if (!idempotencyService.ensureIdempotency(idempotencyKey, IDEMPOTENCY_TTL)) {
+            logger.warn { "중복 이벤트 무시: eventId=${event.eventId}, orderId=${event.orderId}" }
+            acknowledgment.acknowledge()
+            return
+        }
+
         try {
             logger.info {
                 "OrderConfirmed 이벤트 수신: orderId=${event.orderId}, " +
-                    "userId=${event.userId}, totalAmount=${event.totalAmount}"
+                    "userId=${event.userId}, totalAmount=${event.totalAmount}, " +
+                    "eventId=${event.eventId}"
             }
 
-            // 결제 대기 생성 (멱등성은 서비스 레이어에서 보장)
+            // 결제 대기 생성
             val command = CreatePaymentWaitCommand(
                 eventId = event.eventId,
                 orderId = UUID.fromString(event.orderId),
@@ -74,6 +96,9 @@ class OrderEventKafkaConsumer(
             }
         } catch (e: Exception) {
             logger.error(e) { "OrderConfirmed 이벤트 처리 실패: orderId=${event.orderId}" }
+
+            // 멱등성 키 해제 (재시도 허용)
+            idempotencyService.release(idempotencyKey)
 
             // SAGA 보상: 결제 초기화 실패 이벤트 발행
             try {
