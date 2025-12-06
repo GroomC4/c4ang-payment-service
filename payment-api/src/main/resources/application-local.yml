@@ -63,7 +63,7 @@ logging:
 feign:
   clients:
     order-service:
-      url: http://localhost:8082
+      url: http://localhost:8085
       connect-timeout: 10000
       read-timeout: 10000
       logger-level: full

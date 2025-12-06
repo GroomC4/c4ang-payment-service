@@ -1,5 +1,5 @@
 server:
-  port: 8085
+  port: 8086
 
 spring:
   application:
@@ -47,7 +47,7 @@ springdoc:
 feign:
   clients:
     order-service:
-      url: http://localhost:8082
+      url: http://localhost:8085
       connect-timeout: 5000
       read-timeout: 5000
       logger-level: basic
