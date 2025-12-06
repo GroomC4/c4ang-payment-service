@@ -349,4 +349,135 @@ class PaymentQueryControllerIntegrationTest {
                 }
         }
     }
+
+    @Nested
+    @DisplayName("GET /api/v1/payments - 결제 목록 조회")
+    inner class ListPayments {
+        @Test
+        @DisplayName("200 - 사용자별 결제 목록 조회 성공")
+        fun shouldReturnPaymentListForUser() {
+            // given - 추가 Payment 생성
+            val payment2 =
+                PaymentTestFixture.createPaymentCompleted(
+                    orderId = UUID.randomUUID(),
+                    userId = testUserId,
+                )
+            savePaymentPort.save(payment2)
+
+            // when & then
+            mockMvc
+                .get("/api/v1/payments") {
+                    param("userId", testUserId.toString())
+                    contentType = MediaType.APPLICATION_JSON
+                }.andExpect {
+                    status { isOk() }
+                    jsonPath("$.payments") { isArray() }
+                    jsonPath("$.payments.length()") { value(2) }
+                    jsonPath("$.pagination.page") { value(1) }
+                    jsonPath("$.pagination.total") { value(2) }
+                }
+        }
+
+        @Test
+        @DisplayName("200 - 상태 필터링 적용")
+        fun shouldReturnFilteredPaymentsByStatus() {
+            // given - PAYMENT_COMPLETED 상태의 Payment 추가
+            val completedPayment =
+                PaymentTestFixture.createPaymentCompleted(
+                    orderId = UUID.randomUUID(),
+                    userId = testUserId,
+                )
+            savePaymentPort.save(completedPayment)
+
+            // when & then - PAYMENT_COMPLETED 상태만 조회
+            mockMvc
+                .get("/api/v1/payments") {
+                    param("userId", testUserId.toString())
+                    param("status", "PAYMENT_COMPLETED")
+                    contentType = MediaType.APPLICATION_JSON
+                }.andExpect {
+                    status { isOk() }
+                    jsonPath("$.payments") { isArray() }
+                    jsonPath("$.payments.length()") { value(1) }
+                    jsonPath("$.payments[0].status") { value("PAYMENT_COMPLETED") }
+                }
+        }
+
+        @Test
+        @DisplayName("200 - 페이지네이션 적용")
+        fun shouldReturnPaginatedPayments() {
+            // given - 추가 Payment 3개 생성 (총 4개)
+            for (i in 1..3) {
+                val payment =
+                    PaymentTestFixture.createPaymentWait(
+                        orderId = UUID.randomUUID(),
+                        userId = testUserId,
+                    )
+                savePaymentPort.save(payment)
+            }
+
+            // when & then - 페이지 사이즈 2로 첫 페이지 조회
+            mockMvc
+                .get("/api/v1/payments") {
+                    param("userId", testUserId.toString())
+                    param("page", "1")
+                    param("limit", "2")
+                    contentType = MediaType.APPLICATION_JSON
+                }.andExpect {
+                    status { isOk() }
+                    jsonPath("$.payments") { isArray() }
+                    jsonPath("$.payments.length()") { value(2) }
+                    jsonPath("$.pagination.page") { value(1) }
+                    jsonPath("$.pagination.limit") { value(2) }
+                    jsonPath("$.pagination.total") { value(4) }
+                }
+        }
+
+        @Test
+        @DisplayName("200 - 데이터가 없는 경우 빈 목록 반환")
+        fun shouldReturnEmptyListWhenNoPayments() {
+            // given - 다른 사용자 ID로 조회
+            val anotherUserId = UUID.randomUUID()
+
+            // when & then
+            mockMvc
+                .get("/api/v1/payments") {
+                    param("userId", anotherUserId.toString())
+                    contentType = MediaType.APPLICATION_JSON
+                }.andExpect {
+                    status { isOk() }
+                    jsonPath("$.payments") { isArray() }
+                    jsonPath("$.payments.length()") { value(0) }
+                    jsonPath("$.pagination.total") { value(0) }
+                }
+        }
+
+        @Test
+        @DisplayName("200 - 두 번째 페이지 조회")
+        fun shouldReturnSecondPage() {
+            // given - 추가 Payment 3개 생성 (총 4개)
+            for (i in 1..3) {
+                val payment =
+                    PaymentTestFixture.createPaymentWait(
+                        orderId = UUID.randomUUID(),
+                        userId = testUserId,
+                    )
+                savePaymentPort.save(payment)
+            }
+
+            // when & then - 두 번째 페이지 조회
+            mockMvc
+                .get("/api/v1/payments") {
+                    param("userId", testUserId.toString())
+                    param("page", "2")
+                    param("limit", "2")
+                    contentType = MediaType.APPLICATION_JSON
+                }.andExpect {
+                    status { isOk() }
+                    jsonPath("$.payments") { isArray() }
+                    jsonPath("$.payments.length()") { value(2) }
+                    jsonPath("$.pagination.page") { value(2) }
+                }
+        }
+    }
 }
