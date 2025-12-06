@@ -2,6 +2,7 @@ package com.groom.payment.common.exception.handler
 
 import com.groom.payment.common.exception.AuthenticationException
 import com.groom.payment.common.exception.ErrorCode
+import com.groom.payment.common.exception.OrderServiceException
 import com.groom.payment.common.exception.PermissionException
 import com.groom.payment.common.exception.RefreshTokenException
 import com.groom.payment.common.exception.ResourceException
@@ -193,6 +194,45 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
             ErrorResponse(
                 code = errorCode,
                 message = e.message ?: "리소스 처리 중 오류가 발생하였습니다.",
+            ),
+            httpStatus,
+        )
+    }
+
+    /**
+     * Order Service 연동 예외 처리
+     *
+     * 발생 위치:
+     * - OrderAdapter.findById(): ServiceCallFailed
+     * - OrderAdapter.markOrderPaymentPending(): OrderNotFound, InvalidOrderStatus, ServiceCallFailed
+     * - OrderAdapter.hasPayment(): OrderNotFound, ServiceCallFailed
+     */
+    @ExceptionHandler(OrderServiceException::class)
+    fun handleOrderServiceException(e: OrderServiceException): ResponseEntity<ErrorResponse> {
+        val (errorCode, httpStatus) =
+            when (e) {
+                is OrderServiceException.OrderNotFound -> {
+                    logger.warn(e) { "Order not found: orderId=${e.orderId}" }
+                    ErrorCode.ORDER_NOT_FOUND to HttpStatus.NOT_FOUND
+                }
+                is OrderServiceException.PaymentAlreadyExists -> {
+                    logger.warn(e) { "Payment already exists for order: orderId=${e.orderId}" }
+                    ErrorCode.ORDER_PAYMENT_ALREADY_EXISTS to HttpStatus.CONFLICT
+                }
+                is OrderServiceException.InvalidOrderStatus -> {
+                    logger.warn(e) { "Invalid order status: orderId=${e.orderId}, reason=${e.reason}" }
+                    ErrorCode.ORDER_INVALID_STATUS to HttpStatus.CONFLICT
+                }
+                is OrderServiceException.ServiceCallFailed -> {
+                    logger.error(e) { "Order service call failed: operation=${e.operation}" }
+                    ErrorCode.ORDER_SERVICE_CALL_FAILED to HttpStatus.SERVICE_UNAVAILABLE
+                }
+            }
+
+        return ResponseEntity(
+            ErrorResponse(
+                code = errorCode,
+                message = e.message ?: "주문 서비스 처리 중 오류가 발생하였습니다.",
             ),
             httpStatus,
         )

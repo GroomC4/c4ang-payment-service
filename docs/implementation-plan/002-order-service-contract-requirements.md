@@ -39,7 +39,7 @@
 
 **Request**:
 ```http
-GET /api/v1/orders/{orderId}
+GET /internal/v1/orders/{orderId}
 ```
 
 **Expected Response** (200 OK):
@@ -75,7 +75,7 @@ GET /api/v1/orders/{orderId}
 
 **Request**:
 ```http
-POST /api/v1/orders/{orderId}/payment-pending
+POST /internal/v1/orders/{orderId}/payment-pending
 
 {
   "paymentId": "uuid"
@@ -109,7 +109,7 @@ POST /api/v1/orders/{orderId}/payment-pending
 
 **Request**:
 ```http
-GET /api/v1/orders/{orderId}/has-payment
+GET /internal/v1/orders/{orderId}/has-payment
 ```
 
 **Expected Response** (200 OK):
@@ -150,7 +150,7 @@ Contract.make {
 
     request {
         method GET()
-        url("/api/v1/orders/550e8400-e29b-41d4-a716-446655440000")
+        url("/internal/v1/orders/550e8400-e29b-41d4-a716-446655440000")
         headers {
             accept(applicationJson())
             header("Authorization", "Bearer test-token")
@@ -188,7 +188,7 @@ Contract.make {
 
     request {
         method POST()
-        url("/api/v1/orders/550e8400-e29b-41d4-a716-446655440000/payment-pending")
+        url("/internal/v1/orders/550e8400-e29b-41d4-a716-446655440000/payment-pending")
         headers {
             contentType(applicationJson())
             header("Authorization", "Bearer test-token")
@@ -219,7 +219,7 @@ Contract.make {
 
     request {
         method GET()
-        url("/api/v1/orders/550e8400-e29b-41d4-a716-446655440000/has-payment")
+        url("/internal/v1/orders/550e8400-e29b-41d4-a716-446655440000/has-payment")
         headers {
             accept(applicationJson())
             header("Authorization", "Bearer test-token")
@@ -253,17 +253,17 @@ Contract.make {
     configuration = [FeignClientConfig::class],
 )
 interface OrderFeignClient {
-    @GetMapping("/api/v1/orders/{orderId}")
-    fun getOrder(@PathVariable orderId: UUID): OrderResponse
+    @GetMapping("/internal/v1/orders/{orderId}")
+    fun getOrder(@PathVariable orderId: UUID): OrderServiceGetOrderResponse
 
-    @PostMapping("/api/v1/orders/{orderId}/payment-pending")
+    @PostMapping("/internal/v1/orders/{orderId}/payment-pending")
     fun markPaymentPending(
         @PathVariable orderId: UUID,
-        @RequestBody request: PaymentPendingRequest,
-    ): PaymentPendingResponse
+        @RequestBody request: OrderServiceMarkPaymentPendingRequest,
+    ): OrderServiceMarkPaymentPendingResponse
 
-    @GetMapping("/api/v1/orders/{orderId}/has-payment")
-    fun hasPayment(@PathVariable orderId: UUID): HasPaymentResponse
+    @GetMapping("/internal/v1/orders/{orderId}/has-payment")
+    fun hasPayment(@PathVariable orderId: UUID): OrderServiceHasPaymentResponse
 }
 ```
 
@@ -288,7 +288,7 @@ class OrderAdapter(
     override fun markOrderPaymentPending(orderId: UUID, paymentId: UUID) {
         orderFeignClient.markPaymentPending(
             orderId = orderId,
-            request = PaymentPendingRequest(paymentId = paymentId),
+            request = OrderServiceMarkPaymentPendingRequest(paymentId = paymentId),
         )
     }
 
@@ -300,52 +300,67 @@ class OrderAdapter(
 
 ### 3. DTO 클래스
 
-**파일**: `adapter/outbound/client/dto/OrderDtos.kt`
+**파일**: `adapter/outbound/client/dto/OrderServiceGetOrderResponse.kt`
 
 ```kotlin
-data class OrderResponse(
+data class OrderServiceGetOrderResponse(
     val orderId: UUID,
     val userId: UUID,
     val orderNumber: String,
     val status: String,
     val totalAmount: BigDecimal,
-    val items: List<OrderItemResponse>,
+    val items: List<OrderServiceGetOrderItemResponse>,
 ) {
-    fun toOrderInfo(): OrderInfo = OrderInfo(
-        orderId = orderId,
-        userId = userId,
-        orderNumber = orderNumber,
-        status = status,
-        totalAmount = totalAmount,
-        items = items.map { it.toOrderItemInfo() },
-    )
+    fun toOrderInfo(): OrderInfo =
+        OrderInfo(
+            orderId = orderId,
+            orderNumber = orderNumber,
+            items = items.map { it.toOrderItemInfo() },
+        )
 }
+```
 
-data class OrderItemResponse(
+**파일**: `adapter/outbound/client/dto/OrderServiceGetOrderItemResponse.kt`
+
+```kotlin
+data class OrderServiceGetOrderItemResponse(
     val productId: UUID,
     val productName: String,
     val quantity: Int,
     val unitPrice: BigDecimal,
 ) {
-    fun toOrderItemInfo(): OrderItemInfo = OrderItemInfo(
-        productId = productId,
-        productName = productName,
-        quantity = quantity,
-        unitPrice = unitPrice,
-    )
+    fun toOrderItemInfo(): OrderItemInfo =
+        OrderItemInfo(
+            productId = productId,
+            productName = productName,
+            quantity = quantity,
+            price = unitPrice,
+        )
 }
+```
 
-data class PaymentPendingRequest(
+**파일**: `adapter/outbound/client/dto/OrderServiceMarkPaymentPendingRequest.kt`
+
+```kotlin
+data class OrderServiceMarkPaymentPendingRequest(
     val paymentId: UUID,
 )
+```
 
-data class PaymentPendingResponse(
+**파일**: `adapter/outbound/client/dto/OrderServiceMarkPaymentPendingResponse.kt`
+
+```kotlin
+data class OrderServiceMarkPaymentPendingResponse(
     val orderId: UUID,
     val status: String,
     val paymentId: UUID,
 )
+```
 
-data class HasPaymentResponse(
+**파일**: `adapter/outbound/client/dto/OrderServiceHasPaymentResponse.kt`
+
+```kotlin
+data class OrderServiceHasPaymentResponse(
     val hasPayment: Boolean,
 )
 ```

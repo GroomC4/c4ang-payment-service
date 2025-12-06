@@ -4,7 +4,6 @@ import com.groom.payment.application.dto.CompletePaymentCommand
 import com.groom.payment.application.dto.CompletePaymentResult
 import com.groom.payment.domain.port.IdempotencyPort
 import com.groom.payment.domain.port.LoadPaymentPort
-import com.groom.payment.domain.port.OrderPort
 import com.groom.payment.domain.service.PaymentEventFactory
 import com.groom.payment.domain.service.PaymentLockManager
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -28,9 +27,9 @@ import java.time.LocalDateTime
  * 트랜잭션:
  * - @Transactional: JPA dirty checking으로 자동 저장
  *
- * DDD 패턴:
- * - OrderPort를 통한 다른 도메인 연동 (Hexagonal Architecture)
- * - IdempotencyPort를 통한 인프라 기술 추상화
+ * 이벤트 기반 아키텍처:
+ * - PaymentCompletedEvent 발행 → Product Service가 재고 확정
+ * - 참고: docs/INTEGRATION-v2.md
  */
 @Service
 class CompletePaymentService(
@@ -38,7 +37,6 @@ class CompletePaymentService(
     private val paymentLockManager: PaymentLockManager,
     private val idempotencyPort: IdempotencyPort,
     private val eventPublisher: ApplicationEventPublisher,
-    private val orderPort: OrderPort,
     private val paymentEventFactory: PaymentEventFactory,
 ) {
     private val logger = KotlinLogging.logger {}
@@ -83,10 +81,8 @@ class CompletePaymentService(
                     "pgApprovalNumber=${command.pgApprovalNumber}"
             }
 
-            // 재고 예약 확정 (Redis → DB) - Port를 통한 위임
-            orderPort.confirmStockReservation(payment.orderId)
-
             // 도메인 이벤트 생성 및 발행 (AFTER_COMMIT)
+            // PaymentCompletedEvent → Kafka payment.completed → Product Service가 재고 확정
             val event = paymentEventFactory.createPaymentCompletedEvent(payment)
             eventPublisher.publishEvent(event)
 

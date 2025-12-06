@@ -6,7 +6,6 @@ import com.groom.payment.domain.event.PaymentCompletedEvent
 import com.groom.payment.domain.model.PaymentStatus
 import com.groom.payment.domain.port.IdempotencyPort
 import com.groom.payment.domain.port.LoadPaymentPort
-import com.groom.payment.domain.port.OrderPort
 import com.groom.payment.domain.service.PaymentEventFactory
 import com.groom.payment.domain.service.PaymentLockManager
 import com.groom.payment.fixture.PaymentTestFixture
@@ -33,7 +32,6 @@ class CompletePaymentServiceTest :
             val paymentLockManager = mockk<PaymentLockManager>()
             val idempotencyPort = mockk<IdempotencyPort>()
             val eventPublisher = mockk<ApplicationEventPublisher>()
-            val orderPort = mockk<OrderPort>()
             val paymentEventFactory = mockk<PaymentEventFactory>()
 
             val service =
@@ -42,7 +40,6 @@ class CompletePaymentServiceTest :
                     paymentLockManager,
                     idempotencyPort,
                     eventPublisher,
-                    orderPort,
                     paymentEventFactory,
                 )
 
@@ -68,7 +65,6 @@ class CompletePaymentServiceTest :
 
             every { idempotencyPort.ensureIdempotency(idempotencyKey, any()) } returns true
             every { loadPaymentPort.loadById(paymentId) } returns payment
-            every { orderPort.confirmStockReservation(orderId) } just runs
 
             val publishedEventSlot = slot<PaymentCompletedEvent>()
             every { eventPublisher.publishEvent(capture(publishedEventSlot)) } just runs
@@ -118,7 +114,6 @@ class CompletePaymentServiceTest :
             val paymentLockManager = mockk<PaymentLockManager>()
             val idempotencyPort = mockk<IdempotencyPort>()
             val eventPublisher = mockk<ApplicationEventPublisher>()
-            val orderPort = mockk<OrderPort>()
             val paymentEventFactory = mockk<PaymentEventFactory>()
 
             val service =
@@ -127,7 +122,6 @@ class CompletePaymentServiceTest :
                     paymentLockManager,
                     idempotencyPort,
                     eventPublisher,
-                    orderPort,
                     paymentEventFactory,
                 )
 
@@ -172,12 +166,11 @@ class CompletePaymentServiceTest :
             }
         }
 
-        Given("재고 예약 ID가 없는 주문의 결제 완료") {
+        Given("이벤트 기반 재고 확정 - 결제 완료 시 PaymentCompletedEvent만 발행") {
             val loadPaymentPort = mockk<LoadPaymentPort>()
             val paymentLockManager = mockk<PaymentLockManager>()
             val idempotencyPort = mockk<IdempotencyPort>()
             val eventPublisher = mockk<ApplicationEventPublisher>()
-            val orderPort = mockk<OrderPort>()
             val paymentEventFactory = mockk<PaymentEventFactory>()
 
             val service =
@@ -186,7 +179,6 @@ class CompletePaymentServiceTest :
                     paymentLockManager,
                     idempotencyPort,
                     eventPublisher,
-                    orderPort,
                     paymentEventFactory,
                 )
 
@@ -212,7 +204,6 @@ class CompletePaymentServiceTest :
 
             every { idempotencyPort.ensureIdempotency(idempotencyKey, any()) } returns true
             every { loadPaymentPort.loadById(paymentId) } returns payment
-            every { orderPort.confirmStockReservation(orderId) } just runs
 
             val publishedEventSlot = slot<PaymentCompletedEvent>()
             every { eventPublisher.publishEvent(capture(publishedEventSlot)) } just runs
@@ -239,10 +230,11 @@ class CompletePaymentServiceTest :
                     payment.pgApprovalNumber shouldBe pgApprovalNumber
                 }
 
-                Then("PaymentCompletedEvent가 정상적으로 발행되어야 한다") {
+                Then("PaymentCompletedEvent가 정상적으로 발행되어야 한다 (Product Service가 재고 확정 처리)") {
                     val publishedEvent = publishedEventSlot.captured
                     publishedEvent.paymentId shouldBe paymentId
                     publishedEvent.orderId shouldBe orderId
+                    // 재고 확정은 Product Service가 payment.completed 이벤트를 수신하여 처리
                 }
             }
         }
@@ -252,7 +244,6 @@ class CompletePaymentServiceTest :
             val paymentLockManager = mockk<PaymentLockManager>()
             val idempotencyPort = mockk<IdempotencyPort>()
             val eventPublisher = mockk<ApplicationEventPublisher>()
-            val orderPort = mockk<OrderPort>()
             val paymentEventFactory = mockk<PaymentEventFactory>()
 
             val service =
@@ -261,7 +252,6 @@ class CompletePaymentServiceTest :
                     paymentLockManager,
                     idempotencyPort,
                     eventPublisher,
-                    orderPort,
                     paymentEventFactory,
                 )
 

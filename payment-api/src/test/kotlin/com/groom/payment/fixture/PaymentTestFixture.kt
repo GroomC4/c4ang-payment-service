@@ -125,6 +125,28 @@ object PaymentTestFixture {
         )
 
     /**
+     * REFUND_REQUESTED 상태의 Payment 생성
+     * (환불 요청 상태)
+     */
+    fun createRefundRequested(
+        orderId: UUID = UUID.randomUUID(),
+        userId: UUID = UUID.randomUUID(),
+        paymentAmount: BigDecimal = BigDecimal("50000"),
+        pgTransactionId: String = "PG-TX-${UUID.randomUUID().toString().take(8)}",
+        pgApprovalNumber: String = "PG-APPROVAL-${UUID.randomUUID().toString().take(8)}",
+    ): Payment =
+        createPayment(
+            orderId = orderId,
+            userId = userId,
+            totalAmount = paymentAmount,
+            paymentAmount = paymentAmount,
+            status = PaymentStatus.REFUND_REQUESTED,
+            pgTransactionId = pgTransactionId,
+            pgApprovalNumber = pgApprovalNumber,
+            completedAt = LocalDateTime.now().minusHours(1),
+        )
+
+    /**
      * 리플렉션으로 필드 설정 (private/protected 필드 접근)
      */
     fun setField(
