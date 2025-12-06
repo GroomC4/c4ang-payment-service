@@ -44,13 +44,7 @@ interface OrderPort {
      */
     fun hasPayment(orderId: UUID): Boolean
 
-    /**
-     * 재고 예약 확정
-     *
-     * 결제 완료 시 Redis에 예약된 재고를 DB로 확정합니다.
-     *
-     * @param orderId Order ID
-     * @throws IllegalStateException 재고 예약을 찾을 수 없거나 확정에 실패한 경우
-     */
-    fun confirmStockReservation(orderId: UUID)
+    // 재고 예약 확정은 이벤트 기반으로 처리됩니다.
+    // Payment Service → payment.completed 발행 → Product Service가 재고 확정
+    // 참고: docs/INTEGRATION-v2.md
 }

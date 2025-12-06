@@ -296,12 +296,12 @@ POST /api/v1/orders/{orderId}/cancel
 )
 interface OrderFeignClient {
     @GetMapping("/api/v1/orders/{orderId}")
-    fun getOrder(@PathVariable orderId: UUID): OrderResponse
+    fun getOrder(@PathVariable orderId: UUID): OrderServiceGetOrderResponse
 
     @PostMapping("/api/v1/orders/{orderId}/payment-pending")
     fun markPaymentPending(
         @PathVariable orderId: UUID,
-        @RequestBody request: PaymentPendingRequest
+        @RequestBody request: OrderServiceMarkPaymentPendingRequest
     )
 }
 ```

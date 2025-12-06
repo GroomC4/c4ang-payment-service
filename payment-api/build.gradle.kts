@@ -70,6 +70,10 @@ dependencies {
 
     // Spring Cloud Contract (Provider-side testing)
     testImplementation("org.springframework.cloud:spring-cloud-starter-contract-verifier:$springCloudContractVersion")
+    // Spring Cloud Contract (Consumer-side testing - Stub Runner)
+    testImplementation("org.springframework.cloud:spring-cloud-starter-contract-stub-runner:$springCloudContractVersion")
+    // Feign Jackson for contract tests
+    testImplementation("io.github.openfeign:feign-jackson:13.3")
     testImplementation("io.rest-assured:rest-assured:5.3.2")
     testImplementation("io.rest-assured:spring-mock-mvc:5.3.2")
 
@@ -93,6 +97,19 @@ dependencies {
     testImplementation("org.bouncycastle:bcpkix-jdk18on:1.78")
 }
 
+// GitHub Packages에서 Contract Stub을 다운로드하기 위한 Repository 설정
+repositories {
+    mavenCentral()
+    maven {
+        name = "GitHubPackages"
+        url = uri("https://maven.pkg.github.com/GroomC4/c4ang-packages-hub")
+        credentials {
+            username = System.getenv("GITHUB_ACTOR") ?: project.findProperty("gpr.user") as String? ?: ""
+            password = System.getenv("GITHUB_TOKEN") ?: project.findProperty("gpr.key") as String? ?: ""
+        }
+    }
+}
+
 // 모든 Test 태스크에 공통 설정 적용
 tasks.withType<Test> {
     // 메모리 설정 (통합테스트 Testcontainers 실행을 위해)
@@ -101,6 +118,10 @@ tasks.withType<Test> {
 
     systemProperty("user.timezone", "KST")
     jvmArgs("--add-opens", "java.base/java.time=ALL-UNNAMED")
+
+    // Stub Runner가 GitHub Packages에서 Stub을 다운로드하기 위한 인증 설정
+    systemProperty("stubrunner.username", System.getenv("GITHUB_ACTOR") ?: project.findProperty("gpr.user") ?: "")
+    systemProperty("stubrunner.password", System.getenv("GITHUB_TOKEN") ?: project.findProperty("gpr.key") ?: "")
 
     // 테스트 실행 로깅
     testLogging {

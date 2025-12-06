@@ -4,6 +4,7 @@ import feign.Logger
 import feign.codec.ErrorDecoder
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.cloud.openfeign.EnableFeignClients
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
@@ -16,6 +17,7 @@ private val logger = KotlinLogging.logger {}
  * - FeignClientProperties는 프로퍼티 구조화 및 IDE 자동완성을 위한 용도
  */
 @Configuration
+@EnableFeignClients(basePackages = ["com.groom.payment.adapter.outbound.client"])
 @EnableConfigurationProperties(FeignClientProperties::class)
 class FeignConfig {
     /**
@@ -44,6 +46,7 @@ class FeignConfig {
             when (response.status()) {
                 400 -> FeignClientException.BadRequest("Bad Request: ${response.reason()}")
                 404 -> FeignClientException.NotFound("Resource not found: ${response.reason()}")
+                409 -> FeignClientException.Conflict("Conflict: ${response.reason()}")
                 500 -> FeignClientException.InternalServerError("Internal server error: ${response.reason()}")
                 503 -> FeignClientException.ServiceUnavailable("Service unavailable: ${response.reason()}")
                 else -> FeignClientException.Unknown("Unknown error: ${response.reason()}, status: ${response.status()}")
@@ -62,6 +65,10 @@ sealed class FeignClientException(
     ) : FeignClientException(message)
 
     class NotFound(
+        message: String,
+    ) : FeignClientException(message)
+
+    class Conflict(
         message: String,
     ) : FeignClientException(message)
 
