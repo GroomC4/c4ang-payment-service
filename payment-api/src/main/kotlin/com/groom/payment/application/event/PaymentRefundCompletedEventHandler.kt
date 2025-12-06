@@ -36,7 +36,7 @@ class PaymentRefundCompletedEventHandler {
                 "refundedAt=${event.refundedAt}"
         }
 
-        // TODO: 필요 시 Kafka payment.refunded 이벤트 발행
+        // Kafka payment.refunded 이벤트 발행은 필요 시 추가
         // paymentEventPublishPort.publishPaymentRefunded(...)
 
         logger.info {

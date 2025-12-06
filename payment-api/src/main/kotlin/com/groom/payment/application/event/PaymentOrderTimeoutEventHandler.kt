@@ -17,10 +17,10 @@ import org.springframework.stereotype.Component
  * 트랜잭션:
  * - REQUIRES_NEW: Order 트랜잭션과 독립적으로 실행
  * - 실패해도 Order 타임아웃 처리는 완료됨
+ *
+ * 참고: Order Service 연동 시 Kafka Consumer로 OrderTimeoutEvent를 수신하여 구현
  */
 @Component
 class PaymentOrderTimeoutEventHandler {
     private val logger = KotlinLogging.logger {}
-
-    // TODO("Order 서비스 연동 필요 - OrderTimeoutEvent 수신 후 Payment 실패 처리")
 }

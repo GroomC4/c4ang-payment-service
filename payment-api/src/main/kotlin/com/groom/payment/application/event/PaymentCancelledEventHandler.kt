@@ -48,11 +48,10 @@ class PaymentCancelledEventHandler(
         }
 
         // PG 취소가 필요한 경우 (결제 완료 상태에서 취소)
+        // 현재 Fake PG 구현으로 실제 취소 호출은 생략
         if (event.previousStatus == PaymentStatus.PAYMENT_COMPLETED) {
-            // TODO: PG 취소 API 호출
-            // PgGatewayPort.cancelPayment() 구현 후 여기서 호출
             logger.info {
-                "PG 취소 필요: paymentId=${event.paymentId}, previousStatus=${event.previousStatus}"
+                "PG 취소 필요 (Fake PG 사용 중): paymentId=${event.paymentId}, previousStatus=${event.previousStatus}"
             }
         }
 

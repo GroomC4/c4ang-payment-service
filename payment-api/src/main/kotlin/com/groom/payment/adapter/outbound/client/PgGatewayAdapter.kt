@@ -11,17 +11,12 @@ import java.time.LocalDateTime
 import java.util.UUID
 
 /**
- * PG(Payment Gateway) Adapter
+ * PG(Payment Gateway) Fake Adapter
  *
- * PaymentGatewayPort의 구현체
+ * PaymentGatewayPort의 Fake 구현체
  *
- * 현재는 Stub 구현으로 항상 성공 응답을 반환합니다.
- * 실제 PG사 연동 시 이 클래스의 구현을 교체하면 됩니다.
- *
- * 실제 구현 예시:
- * - Toss Payments API 호출
- * - Kakao Pay API 호출
- * - NHN KCP API 호출
+ * 실제 PG사 연동 없이 항상 성공 응답을 반환합니다.
+ * 테스트 및 개발 환경에서 사용됩니다.
  */
 @Component
 class PgGatewayAdapter : PaymentGatewayPort {
@@ -32,14 +27,13 @@ class PgGatewayAdapter : PaymentGatewayPort {
         amount: BigDecimal,
         orderNumber: String,
     ): PgRequestResult {
-        logger.info { "PG Stub - 결제 요청: paymentId=$paymentId, amount=$amount, orderNumber=$orderNumber" }
+        logger.info { "PG Fake - 결제 요청: paymentId=$paymentId, amount=$amount, orderNumber=$orderNumber" }
 
-        // TODO: PG사 연동을 하지않아 무조건 성공응답이 내려온다. 향후 연동을 하게되면 실제 응답값을 반영해야한다.
         val pgTransactionId = "PG-${UUID.randomUUID()}"
         val paymentUrl = "https://pg.example.com/pay/$paymentId"
         val expiresAt = LocalDateTime.now().plusMinutes(10)
 
-        logger.info { "PG Stub - 결제 요청 성공: pgTransactionId=$pgTransactionId, expiresAt=$expiresAt" }
+        logger.info { "PG Fake - 결제 요청 성공: pgTransactionId=$pgTransactionId, expiresAt=$expiresAt" }
 
         return PgRequestResult(
             pgTransactionId = pgTransactionId,
@@ -49,12 +43,11 @@ class PgGatewayAdapter : PaymentGatewayPort {
     }
 
     override fun cancelPayment(pgTransactionId: String): PgCancelResult {
-        logger.info { "PG Stub - 결제 취소 요청: pgTransactionId=$pgTransactionId" }
+        logger.info { "PG Fake - 결제 취소 요청: pgTransactionId=$pgTransactionId" }
 
-        // TODO: 실제 PG사 결제 취소 API 호출
         val pgCancelId = "CANCEL-${UUID.randomUUID()}"
 
-        logger.info { "PG Stub - 결제 취소 성공: pgTransactionId=$pgTransactionId, pgCancelId=$pgCancelId" }
+        logger.info { "PG Fake - 결제 취소 성공: pgTransactionId=$pgTransactionId, pgCancelId=$pgCancelId" }
 
         return PgCancelResult(
             success = true,
@@ -67,12 +60,11 @@ class PgGatewayAdapter : PaymentGatewayPort {
         pgTransactionId: String,
         amount: BigDecimal,
     ): PgRefundResult {
-        logger.info { "PG Stub - 환불 요청: pgTransactionId=$pgTransactionId, amount=$amount" }
+        logger.info { "PG Fake - 환불 요청: pgTransactionId=$pgTransactionId, amount=$amount" }
 
-        // TODO: 실제 PG사 환불 API 호출
         val refundId = "REFUND-${UUID.randomUUID()}"
 
-        logger.info { "PG Stub - 환불 성공: pgTransactionId=$pgTransactionId, refundId=$refundId, amount=$amount" }
+        logger.info { "PG Fake - 환불 성공: pgTransactionId=$pgTransactionId, refundId=$refundId, amount=$amount" }
 
         return PgRefundResult(
             success = true,

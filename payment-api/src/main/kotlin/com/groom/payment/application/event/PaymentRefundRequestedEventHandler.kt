@@ -70,10 +70,10 @@ class PaymentRefundRequestedEventHandler(
                 "환불 완료 처리: paymentId=${event.paymentId}, status=${payment.status}"
             }
         } else {
+            // 현재 Fake PG는 항상 성공 반환하므로 이 분기는 실행되지 않음
             logger.error {
                 "PG 환불 실패: paymentId=${event.paymentId}, refundId=${refundResult.refundId}"
             }
-            // TODO: 환불 실패 처리 로직 (재시도, 알림 등)
         }
     }
 }
