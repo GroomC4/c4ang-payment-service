@@ -5,6 +5,9 @@ import com.groom.payment.application.dto.CreatePaymentWaitResult
 import com.groom.payment.domain.model.Payment
 import com.groom.payment.domain.port.LoadPaymentPort
 import com.groom.payment.domain.port.SavePaymentPort
+import com.groom.platform.saga.SagaSteps
+import com.groom.platform.saga.SagaTrackerClient
+import com.groom.platform.saga.SagaType
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -28,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional
 class CreatePaymentWaitService(
     private val loadPaymentPort: LoadPaymentPort,
     private val savePaymentPort: SavePaymentPort,
+    private val sagaTrackerClient: SagaTrackerClient,
 ) {
     private val logger = KotlinLogging.logger {}
 
@@ -74,6 +78,19 @@ class CreatePaymentWaitService(
             "결제 대기 생성 완료: paymentId=${savedPayment.id}, " +
                 "orderId=${savedPayment.orderId}, status=${savedPayment.status}"
         }
+
+        // Saga Tracker 기록: PAYMENT_INITIALIZATION
+        sagaTrackerClient.recordProgress(
+            sagaId = savedPayment.id.toString(),
+            sagaType = SagaType.ORDER_CREATION,
+            step = SagaSteps.PAYMENT_INITIALIZATION,
+            orderId = savedPayment.orderId.toString(),
+            metadata = mapOf<String, Any>(
+                "userId" to savedPayment.userId.toString(),
+                "totalAmount" to (savedPayment.totalAmount?.toString() ?: "0"),
+                "status" to savedPayment.status.name,
+            ),
+        )
 
         return CreatePaymentWaitResult(
             paymentId = savedPayment.id,

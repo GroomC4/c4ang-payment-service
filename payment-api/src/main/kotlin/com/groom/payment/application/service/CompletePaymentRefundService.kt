@@ -6,6 +6,9 @@ import com.groom.payment.domain.port.IdempotencyPort
 import com.groom.payment.domain.port.LoadPaymentPort
 import com.groom.payment.domain.service.PaymentEventFactory
 import com.groom.payment.domain.service.PaymentLockManager
+import com.groom.platform.saga.SagaSteps
+import com.groom.platform.saga.SagaTrackerClient
+import com.groom.platform.saga.SagaType
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
@@ -34,6 +37,7 @@ class CompletePaymentRefundService(
     private val idempotencyPort: IdempotencyPort,
     private val eventPublisher: ApplicationEventPublisher,
     private val paymentEventFactory: PaymentEventFactory,
+    private val sagaTrackerClient: SagaTrackerClient,
 ) {
     private val logger = KotlinLogging.logger {}
 
@@ -76,6 +80,18 @@ class CompletePaymentRefundService(
             // 도메인 이벤트 생성 및 발행 (AFTER_COMMIT)
             val event = paymentEventFactory.createPaymentRefundCompletedEvent(payment)
             eventPublisher.publishEvent(event)
+
+            // Saga Tracker 기록: PAYMENT_REFUNDED (보상 처리)
+            sagaTrackerClient.recordCompensation(
+                sagaId = payment.id.toString(),
+                sagaType = SagaType.PAYMENT_COMPLETION,
+                step = SagaSteps.PAYMENT_REFUNDED,
+                orderId = payment.orderId.toString(),
+                metadata = mapOf<String, Any>(
+                    "refundTransactionId" to command.refundTransactionId,
+                    "refundedAt" to payment.refundedAt.toString(),
+                ),
+            )
 
             CompletePaymentRefundResult(
                 paymentId = payment.id,

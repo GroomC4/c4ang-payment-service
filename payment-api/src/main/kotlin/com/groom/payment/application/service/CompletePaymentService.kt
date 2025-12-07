@@ -6,6 +6,9 @@ import com.groom.payment.domain.port.IdempotencyPort
 import com.groom.payment.domain.port.LoadPaymentPort
 import com.groom.payment.domain.service.PaymentEventFactory
 import com.groom.payment.domain.service.PaymentLockManager
+import com.groom.platform.saga.SagaSteps
+import com.groom.platform.saga.SagaTrackerClient
+import com.groom.platform.saga.SagaType
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
@@ -38,6 +41,7 @@ class CompletePaymentService(
     private val idempotencyPort: IdempotencyPort,
     private val eventPublisher: ApplicationEventPublisher,
     private val paymentEventFactory: PaymentEventFactory,
+    private val sagaTrackerClient: SagaTrackerClient,
 ) {
     private val logger = KotlinLogging.logger {}
 
@@ -87,6 +91,18 @@ class CompletePaymentService(
             eventPublisher.publishEvent(event)
 
             logger.info { "Payment completed successfully: paymentId=${payment.id}, orderId=${payment.orderId}" }
+
+            // Saga Tracker 기록: PAYMENT_COMPLETED
+            sagaTrackerClient.recordComplete(
+                sagaId = payment.id.toString(),
+                sagaType = SagaType.PAYMENT_COMPLETION,
+                step = SagaSteps.PAYMENT_COMPLETED,
+                orderId = payment.orderId.toString(),
+                metadata = mapOf<String, Any>(
+                    "pgApprovalNumber" to command.pgApprovalNumber,
+                    "completedAt" to payment.completedAt.toString(),
+                ),
+            )
 
             CompletePaymentResult(
                 paymentId = payment.id,

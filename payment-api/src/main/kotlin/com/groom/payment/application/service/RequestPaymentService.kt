@@ -6,6 +6,9 @@ import com.groom.payment.domain.port.LoadPaymentPort
 import com.groom.payment.domain.port.PaymentGatewayPort
 import com.groom.payment.domain.service.PaymentEventFactory
 import com.groom.payment.domain.service.PaymentLockManager
+import com.groom.platform.saga.SagaSteps
+import com.groom.platform.saga.SagaTrackerClient
+import com.groom.platform.saga.SagaType
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
@@ -36,6 +39,7 @@ class RequestPaymentService(
     private val paymentLockManager: PaymentLockManager,
     private val eventPublisher: ApplicationEventPublisher,
     private val paymentEventFactory: PaymentEventFactory,
+    private val sagaTrackerClient: SagaTrackerClient,
 ) {
     private val logger = KotlinLogging.logger {}
 
@@ -81,6 +85,20 @@ class RequestPaymentService(
             // 4. 도메인 이벤트 생성 및 발행
             val event = paymentEventFactory.createPaymentRequestedEvent(payment)
             eventPublisher.publishEvent(event)
+
+            // 5. Saga Tracker 기록: PAYMENT_INITIALIZED
+            sagaTrackerClient.recordProgress(
+                sagaId = payment.id.toString(),
+                sagaType = SagaType.ORDER_CREATION,
+                step = SagaSteps.PAYMENT_INITIALIZED,
+                orderId = payment.orderId.toString(),
+                metadata = mapOf<String, Any>(
+                    "pgTransactionId" to pgResult.pgTransactionId,
+                    "paymentMethod" to command.paymentMethod.name,
+                    "paymentAmount" to command.paymentAmount.toString(),
+                    "totalAmount" to command.totalAmount.toString(),
+                ),
+            )
 
             RequestPaymentResult(
                 paymentId = payment.id,
