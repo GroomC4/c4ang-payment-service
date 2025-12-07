@@ -8,6 +8,7 @@ import com.groom.payment.domain.port.LoadPaymentPort
 import com.groom.payment.domain.service.PaymentEventFactory
 import com.groom.payment.domain.service.PaymentLockManager
 import com.groom.payment.fixture.PaymentTestFixture
+import com.groom.platform.saga.SagaTrackerClient
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
@@ -31,6 +32,7 @@ class CancelPaymentServiceTest :
             val paymentLockManager = mockk<PaymentLockManager>()
             val eventPublisher = mockk<ApplicationEventPublisher>()
             val paymentEventFactory = mockk<PaymentEventFactory>()
+            val sagaTrackerClient = mockk<SagaTrackerClient>(relaxed = true)
 
             val service =
                 CancelPaymentService(
@@ -38,6 +40,7 @@ class CancelPaymentServiceTest :
                     paymentLockManager,
                     eventPublisher,
                     paymentEventFactory,
+                    sagaTrackerClient,
                 )
 
             val payment = PaymentTestFixture.createPaymentWait()
@@ -101,6 +104,7 @@ class CancelPaymentServiceTest :
             val paymentLockManager = mockk<PaymentLockManager>()
             val eventPublisher = mockk<ApplicationEventPublisher>()
             val paymentEventFactory = mockk<PaymentEventFactory>()
+            val sagaTrackerClient = mockk<SagaTrackerClient>(relaxed = true)
 
             val service =
                 CancelPaymentService(
@@ -108,6 +112,7 @@ class CancelPaymentServiceTest :
                     paymentLockManager,
                     eventPublisher,
                     paymentEventFactory,
+                    sagaTrackerClient,
                 )
 
             val payment = PaymentTestFixture.createPaymentRequest()
@@ -160,6 +165,7 @@ class CancelPaymentServiceTest :
             val paymentLockManager = mockk<PaymentLockManager>()
             val eventPublisher = mockk<ApplicationEventPublisher>()
             val paymentEventFactory = mockk<PaymentEventFactory>()
+            val sagaTrackerClient = mockk<SagaTrackerClient>(relaxed = true)
 
             val service =
                 CancelPaymentService(
@@ -167,6 +173,7 @@ class CancelPaymentServiceTest :
                     paymentLockManager,
                     eventPublisher,
                     paymentEventFactory,
+                    sagaTrackerClient,
                 )
 
             val paymentId = UUID.randomUUID()
@@ -198,6 +205,7 @@ class CancelPaymentServiceTest :
             val paymentLockManager = mockk<PaymentLockManager>()
             val eventPublisher = mockk<ApplicationEventPublisher>()
             val paymentEventFactory = mockk<PaymentEventFactory>()
+            val sagaTrackerClient = mockk<SagaTrackerClient>(relaxed = true)
 
             val service =
                 CancelPaymentService(
@@ -205,6 +213,7 @@ class CancelPaymentServiceTest :
                     paymentLockManager,
                     eventPublisher,
                     paymentEventFactory,
+                    sagaTrackerClient,
                 )
 
             val payment = PaymentTestFixture.createPaymentCompleted()
@@ -237,6 +246,7 @@ class CancelPaymentServiceTest :
             val paymentLockManager = mockk<PaymentLockManager>()
             val eventPublisher = mockk<ApplicationEventPublisher>()
             val paymentEventFactory = mockk<PaymentEventFactory>()
+            val sagaTrackerClient = mockk<SagaTrackerClient>(relaxed = true)
 
             val service =
                 CancelPaymentService(
@@ -244,6 +254,7 @@ class CancelPaymentServiceTest :
                     paymentLockManager,
                     eventPublisher,
                     paymentEventFactory,
+                    sagaTrackerClient,
                 )
 
             val paymentId = UUID.randomUUID()

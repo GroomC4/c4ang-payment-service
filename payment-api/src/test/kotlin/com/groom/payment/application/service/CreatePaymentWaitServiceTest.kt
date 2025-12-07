@@ -7,6 +7,7 @@ import com.groom.payment.domain.model.PaymentStatus
 import com.groom.payment.domain.port.LoadPaymentPort
 import com.groom.payment.domain.port.SavePaymentPort
 import com.groom.payment.fixture.PaymentTestFixture
+import com.groom.platform.saga.SagaTrackerClient
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
@@ -26,11 +27,13 @@ class CreatePaymentWaitServiceTest :
         Given("신규 결제 대기 생성") {
             val loadPaymentPort = mockk<LoadPaymentPort>()
             val savePaymentPort = mockk<SavePaymentPort>()
+            val sagaTrackerClient = mockk<SagaTrackerClient>(relaxed = true)
 
             val service =
                 CreatePaymentWaitService(
                     loadPaymentPort,
                     savePaymentPort,
+                    sagaTrackerClient,
                 )
 
             val orderId = UUID.randomUUID()
@@ -80,11 +83,13 @@ class CreatePaymentWaitServiceTest :
         Given("멱등성 - 이미 존재하는 주문에 대한 결제 대기") {
             val loadPaymentPort = mockk<LoadPaymentPort>()
             val savePaymentPort = mockk<SavePaymentPort>()
+            val sagaTrackerClient = mockk<SagaTrackerClient>(relaxed = true)
 
             val service =
                 CreatePaymentWaitService(
                     loadPaymentPort,
                     savePaymentPort,
+                    sagaTrackerClient,
                 )
 
             val orderId = UUID.randomUUID()
@@ -127,11 +132,13 @@ class CreatePaymentWaitServiceTest :
         Given("멱등성 - 이미 PAYMENT_REQUEST 상태인 결제") {
             val loadPaymentPort = mockk<LoadPaymentPort>()
             val savePaymentPort = mockk<SavePaymentPort>()
+            val sagaTrackerClient = mockk<SagaTrackerClient>(relaxed = true)
 
             val service =
                 CreatePaymentWaitService(
                     loadPaymentPort,
                     savePaymentPort,
+                    sagaTrackerClient,
                 )
 
             val orderId = UUID.randomUUID()
@@ -173,11 +180,13 @@ class CreatePaymentWaitServiceTest :
         Given("다른 주문에 대한 결제 대기 생성") {
             val loadPaymentPort = mockk<LoadPaymentPort>()
             val savePaymentPort = mockk<SavePaymentPort>()
+            val sagaTrackerClient = mockk<SagaTrackerClient>(relaxed = true)
 
             val service =
                 CreatePaymentWaitService(
                     loadPaymentPort,
                     savePaymentPort,
+                    sagaTrackerClient,
                 )
 
             val orderId1 = UUID.randomUUID()

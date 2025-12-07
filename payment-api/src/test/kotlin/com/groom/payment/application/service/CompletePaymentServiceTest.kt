@@ -9,6 +9,7 @@ import com.groom.payment.domain.port.LoadPaymentPort
 import com.groom.payment.domain.service.PaymentEventFactory
 import com.groom.payment.domain.service.PaymentLockManager
 import com.groom.payment.fixture.PaymentTestFixture
+import com.groom.platform.saga.SagaTrackerClient
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
@@ -33,6 +34,7 @@ class CompletePaymentServiceTest :
             val idempotencyPort = mockk<IdempotencyPort>()
             val eventPublisher = mockk<ApplicationEventPublisher>()
             val paymentEventFactory = mockk<PaymentEventFactory>()
+            val sagaTrackerClient = mockk<SagaTrackerClient>(relaxed = true)
 
             val service =
                 CompletePaymentService(
@@ -41,6 +43,7 @@ class CompletePaymentServiceTest :
                     idempotencyPort,
                     eventPublisher,
                     paymentEventFactory,
+                    sagaTrackerClient,
                 )
 
             val pgApprovalNumber = "PG-APPROVAL-001"
@@ -115,6 +118,7 @@ class CompletePaymentServiceTest :
             val idempotencyPort = mockk<IdempotencyPort>()
             val eventPublisher = mockk<ApplicationEventPublisher>()
             val paymentEventFactory = mockk<PaymentEventFactory>()
+            val sagaTrackerClient = mockk<SagaTrackerClient>(relaxed = true)
 
             val service =
                 CompletePaymentService(
@@ -123,6 +127,7 @@ class CompletePaymentServiceTest :
                     idempotencyPort,
                     eventPublisher,
                     paymentEventFactory,
+                    sagaTrackerClient,
                 )
 
             val pgApprovalNumber = "PG-APPROVAL-002"
@@ -172,6 +177,7 @@ class CompletePaymentServiceTest :
             val idempotencyPort = mockk<IdempotencyPort>()
             val eventPublisher = mockk<ApplicationEventPublisher>()
             val paymentEventFactory = mockk<PaymentEventFactory>()
+            val sagaTrackerClient = mockk<SagaTrackerClient>(relaxed = true)
 
             val service =
                 CompletePaymentService(
@@ -180,6 +186,7 @@ class CompletePaymentServiceTest :
                     idempotencyPort,
                     eventPublisher,
                     paymentEventFactory,
+                    sagaTrackerClient,
                 )
 
             val pgApprovalNumber = "PG-APPROVAL-003"
@@ -245,6 +252,7 @@ class CompletePaymentServiceTest :
             val idempotencyPort = mockk<IdempotencyPort>()
             val eventPublisher = mockk<ApplicationEventPublisher>()
             val paymentEventFactory = mockk<PaymentEventFactory>()
+            val sagaTrackerClient = mockk<SagaTrackerClient>(relaxed = true)
 
             val service =
                 CompletePaymentService(
@@ -253,6 +261,7 @@ class CompletePaymentServiceTest :
                     idempotencyPort,
                     eventPublisher,
                     paymentEventFactory,
+                    sagaTrackerClient,
                 )
 
             val paymentId = UUID.randomUUID()
