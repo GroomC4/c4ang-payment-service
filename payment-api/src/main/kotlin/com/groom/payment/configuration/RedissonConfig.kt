@@ -31,8 +31,8 @@ import org.springframework.context.annotation.Profile
 class RedissonConfig {
     @Bean
     fun redissonClient(
-        @Value("\${spring.redis.host:localhost}") host: String,
-        @Value("\${spring.redis.port:6379}") port: Int,
+        @Value("\${spring.data.redis.host:\${spring.redis.host:localhost}}") host: String,
+        @Value("\${spring.data.redis.port:\${spring.redis.port:6379}}") port: Int,
     ): RedissonClient {
         val config = Config()
 
