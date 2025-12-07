@@ -2,6 +2,11 @@
 # dev 프로필 - k3d 개발환경 (Kubernetes)
 # ====================================
 
+# Platform Saga Tracker 설정
+platform:
+  saga:
+    enabled: true  # dev 환경에서 Saga Tracker 활성화
+
 spring:
   datasource:
     master:

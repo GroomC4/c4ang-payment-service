@@ -5,6 +5,9 @@ import com.groom.payment.application.dto.CancelPaymentResult
 import com.groom.payment.domain.port.LoadPaymentPort
 import com.groom.payment.domain.service.PaymentEventFactory
 import com.groom.payment.domain.service.PaymentLockManager
+import com.groom.platform.saga.SagaSteps
+import com.groom.platform.saga.SagaTrackerClient
+import com.groom.platform.saga.SagaType
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
@@ -32,6 +35,7 @@ class CancelPaymentService(
     private val paymentLockManager: PaymentLockManager,
     private val eventPublisher: ApplicationEventPublisher,
     private val paymentEventFactory: PaymentEventFactory,
+    private val sagaTrackerClient: SagaTrackerClient,
 ) {
     private val logger = KotlinLogging.logger {}
 
@@ -57,6 +61,19 @@ class CancelPaymentService(
             // 도메인 이벤트 생성 및 발행 (AFTER_COMMIT)
             val event = paymentEventFactory.createPaymentCancelledEvent(payment, previousStatus, command.reason)
             eventPublisher.publishEvent(event)
+
+            // Saga Tracker 기록: PAYMENT_CANCELLED (보상 처리)
+            sagaTrackerClient.recordCompensation(
+                sagaId = payment.id.toString(),
+                sagaType = SagaType.ORDER_CREATION,
+                step = SagaSteps.PAYMENT_CANCELLED,
+                orderId = payment.orderId.toString(),
+                metadata = mapOf<String, Any>(
+                    "reason" to command.reason,
+                    "previousStatus" to previousStatus.name,
+                    "cancelledAt" to payment.cancelledAt.toString(),
+                ),
+            )
 
             CancelPaymentResult(
                 paymentId = payment.id,

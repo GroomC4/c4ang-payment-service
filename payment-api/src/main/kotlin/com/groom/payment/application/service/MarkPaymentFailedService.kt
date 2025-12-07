@@ -5,6 +5,9 @@ import com.groom.payment.application.dto.MarkPaymentFailedResult
 import com.groom.payment.domain.port.LoadPaymentPort
 import com.groom.payment.domain.service.PaymentEventFactory
 import com.groom.payment.domain.service.PaymentLockManager
+import com.groom.platform.saga.SagaSteps
+import com.groom.platform.saga.SagaTrackerClient
+import com.groom.platform.saga.SagaType
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
@@ -28,6 +31,7 @@ class MarkPaymentFailedService(
     private val paymentLockManager: PaymentLockManager,
     private val eventPublisher: ApplicationEventPublisher,
     private val paymentEventFactory: PaymentEventFactory,
+    private val sagaTrackerClient: SagaTrackerClient,
 ) {
     private val logger = KotlinLogging.logger {}
 
@@ -51,6 +55,15 @@ class MarkPaymentFailedService(
             // 도메인 이벤트 생성 및 발행 (AFTER_COMMIT)
             val event = paymentEventFactory.createPaymentFailedEvent(payment, command.reason)
             eventPublisher.publishEvent(event)
+
+            // Saga Tracker 기록: PAYMENT_FAILED
+            sagaTrackerClient.recordFailure(
+                sagaId = payment.id.toString(),
+                sagaType = SagaType.PAYMENT_COMPLETION,
+                step = SagaSteps.PAYMENT_FAILED,
+                orderId = payment.orderId.toString(),
+                failureReason = command.reason,
+            )
 
             MarkPaymentFailedResult(
                 paymentId = payment.id,

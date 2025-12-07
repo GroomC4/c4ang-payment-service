@@ -2,6 +2,11 @@
 # prod 프로필 - 실제 운영환경 (Production)
 # ====================================
 
+# Platform Saga Tracker 설정
+platform:
+  saga:
+    enabled: true  # prod 환경에서 Saga Tracker 활성화
+
 spring:
   datasource:
     master:
