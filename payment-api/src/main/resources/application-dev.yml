@@ -83,7 +83,7 @@ spring.data.redis:
 feign:
   clients:
     order-service:
-      url: ${ORDER_SERVICE_URL:http://order-api:8082}
+      url: ${ORDER_SERVICE_URL:http://order-api}
       connect-timeout: 5000
       read-timeout: 5000
       logger-level: full
