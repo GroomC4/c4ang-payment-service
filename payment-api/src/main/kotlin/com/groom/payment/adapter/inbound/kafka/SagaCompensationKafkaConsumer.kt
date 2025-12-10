@@ -9,6 +9,7 @@ import com.groom.payment.domain.port.LoadPaymentPort
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.kafka.support.Acknowledgment
+import org.springframework.messaging.handler.annotation.Payload
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.util.UUID
@@ -55,7 +56,7 @@ class SagaCompensationKafkaConsumer(
         containerFactory = "kafkaListenerContainerFactory",
     )
     fun handleStockConfirmationFailed(
-        event: StockConfirmationFailed,
+        @Payload event: StockConfirmationFailed,
         acknowledgment: Acknowledgment,
     ) {
         val idempotencyKey = "$IDEMPOTENCY_PREFIX:${event.eventId}"

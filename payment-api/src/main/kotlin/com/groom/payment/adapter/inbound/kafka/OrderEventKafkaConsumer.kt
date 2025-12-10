@@ -9,6 +9,7 @@ import com.groom.payment.domain.port.PaymentEventPublishPort
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.kafka.support.Acknowledgment
+import org.springframework.messaging.handler.annotation.Payload
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.util.UUID
@@ -58,7 +59,7 @@ class OrderEventKafkaConsumer(
         containerFactory = "kafkaListenerContainerFactory",
     )
     fun handleOrderConfirmed(
-        event: OrderConfirmed,
+        @Payload event: OrderConfirmed,
         acknowledgment: Acknowledgment,
     ) {
         val idempotencyKey = "$IDEMPOTENCY_PREFIX:${event.eventId}"

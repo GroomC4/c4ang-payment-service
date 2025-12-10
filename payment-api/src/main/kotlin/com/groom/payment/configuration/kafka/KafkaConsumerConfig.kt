@@ -10,11 +10,17 @@ import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory
 import org.springframework.kafka.core.ConsumerFactory
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory
 import org.springframework.kafka.listener.ContainerProperties
+import org.springframework.kafka.listener.DefaultErrorHandler
+import org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+import org.springframework.util.backoff.FixedBackOff
 
 /**
  * Kafka Consumer 설정
  * - Order 도메인 이벤트를 구독
  * - Schema Registry를 통한 Avro 역직렬화
+ *
+ * ErrorHandlingDeserializer를 사용하여 역직렬화 실패 시에도
+ * 무한 재시도를 방지하고 정상 메시지 처리를 계속합니다.
  */
 @Configuration
 class KafkaConsumerConfig {
@@ -37,8 +43,11 @@ class KafkaConsumerConfig {
             mapOf(
                 ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to bootstrapServers,
                 ConsumerConfig.GROUP_ID_CONFIG to groupId,
-                ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to StringDeserializer::class.java,
-                ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to KafkaAvroDeserializer::class.java,
+                // ErrorHandlingDeserializer로 래핑하여 역직렬화 에러 처리
+                ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to ErrorHandlingDeserializer::class.java,
+                ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to ErrorHandlingDeserializer::class.java,
+                ErrorHandlingDeserializer.KEY_DESERIALIZER_CLASS to StringDeserializer::class.java,
+                ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS to KafkaAvroDeserializer::class.java,
                 "schema.registry.url" to schemaRegistryUrl,
                 "specific.avro.reader" to true, // SpecificRecord 사용
                 // Consumer 설정
@@ -56,6 +65,10 @@ class KafkaConsumerConfig {
         factory.setConcurrency(3) // 동시 처리 스레드 수
         factory.containerProperties.isMissingTopicsFatal = false // 토픽 없어도 시작
         factory.containerProperties.ackMode = ContainerProperties.AckMode.MANUAL // 수동 커밋 활성화
+        // 에러 핸들러: 3회 재시도 후 스킵 (1초 간격)
+        factory.setCommonErrorHandler(
+            DefaultErrorHandler(FixedBackOff(1000L, 3L))
+        )
         return factory
     }
 }
