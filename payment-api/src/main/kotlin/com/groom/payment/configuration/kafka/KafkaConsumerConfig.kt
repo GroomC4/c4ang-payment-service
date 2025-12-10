@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory
 import org.springframework.kafka.core.ConsumerFactory
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory
+import org.springframework.kafka.listener.ContainerProperties
 
 /**
  * Kafka Consumer 설정
@@ -54,6 +55,7 @@ class KafkaConsumerConfig {
         factory.consumerFactory = consumerFactory()
         factory.setConcurrency(3) // 동시 처리 스레드 수
         factory.containerProperties.isMissingTopicsFatal = false // 토픽 없어도 시작
+        factory.containerProperties.ackMode = ContainerProperties.AckMode.MANUAL // 수동 커밋 활성화
         return factory
     }
 }
