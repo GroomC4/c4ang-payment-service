@@ -3,6 +3,7 @@ package com.groom.payment.application.service
 import com.groom.payment.application.dto.RequestPaymentCommand
 import com.groom.payment.application.dto.RequestPaymentResult
 import com.groom.payment.domain.port.LoadPaymentPort
+import com.groom.payment.domain.port.OrderPort
 import com.groom.payment.domain.port.PaymentGatewayPort
 import com.groom.payment.domain.service.PaymentEventFactory
 import com.groom.payment.domain.service.PaymentLockManager
@@ -40,6 +41,7 @@ class RequestPaymentService(
     private val eventPublisher: ApplicationEventPublisher,
     private val paymentEventFactory: PaymentEventFactory,
     private val sagaTrackerClient: SagaTrackerClient,
+    private val orderPort: OrderPort,
 ) {
     private val logger = KotlinLogging.logger {}
 
@@ -65,7 +67,11 @@ class RequestPaymentService(
                     "pgUrl=${pgResult.paymentUrl}"
             }
 
-            // 3. Payment 상태 변경 및 금액 정보 설정 (PAYMENT_WAIT → PAYMENT_REQUEST)
+            // 3. Order 상태를 PAYMENT_PENDING으로 변경 (ORDER_CONFIRMED → PAYMENT_PENDING)
+            orderPort.markOrderPaymentPending(payment.orderId, payment.id)
+            logger.info { "Order marked as payment pending: orderId=${payment.orderId}, paymentId=${payment.id}" }
+
+            // 4. Payment 상태 변경 및 금액 정보 설정 (PAYMENT_WAIT → PAYMENT_REQUEST)
             // JPA dirty checking으로 자동 저장
             payment.requestPayment(
                 pgTransactionId = pgResult.pgTransactionId,
